@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>作文批改大人 · 申论专项批改</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="description" content="作文批改大人提供申论专项批改、逐句批注、采分点诊断、解题陪练与备考题库。">
+  <meta name="theme-color" content="#FFFFFF">
+  <link rel="icon" type="image/png" href="assets/logo-144.png">
+  <link rel="apple-touch-icon" href="assets/logo-144.png">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+<!-- ============ 顶栏 ============ -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-brand">
+      <div class="topbar-logo-badge">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <h1 class="topbar-title">作文批改大人</h1>
+    </div>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="#/papers">真题库</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 视图容器：七个视图按 hash 路由切换 ============ -->
+<main class="page" id="views">
+
+  <!-- 1. 批改 #/grade -->
+  <section class="view" id="view-grade" hidden>
+    <!-- 卡片 1：题目要求与题型分段选择 -->
+    <div class="card card-question">
+      <div class="card-head-row">
+        <span class="card-title-text">题型与要求</span>
+      </div>
+      <!-- 移动端分段控制栏 (Segmented Control) -->
+      <div class="type-segmented" id="grade-type-segmented">
+        <button type="button" class="type-segment active" data-type="归纳概括">归纳概括</button>
+        <button type="button" class="type-segment" data-type="综合分析">综合分析</button>
+        <button type="button" class="type-segment" data-type="提出对策">提出对策</button>
+        <button type="button" class="type-segment" data-type="公文写作">公文写作</button>
+        <button type="button" class="type-segment" data-type="文章写作">文章写作</button>
+      </div>
+      <!-- 隐藏原生 select 保持所有 JS 契约完全兼容 -->
+      <select class="type-select-native" id="grade-type" hidden></select>
+
+      <div class="field mb-0">
+        <textarea class="input-box question-textarea" id="grade-question" rows="3" placeholder="输入题目作答要求（例如：概括当前县域数字技术下沉面临的主要问题，不超过 250 字）"></textarea>
+      </div>
+      <!-- 快捷真题推荐标签 -->
+      <div class="preset-strip">
+        <span class="preset-label">速填真题</span>
+        <div class="preset-chips-scroll" id="grade-preset-chips">
+          <button type="button" class="preset-pill" data-preset="guokao_fusheng_01">2024国考·数字下沉</button>
+          <button type="button" class="preset-pill" data-preset="guokao_fusheng_02">2024国考·治理留白</button>
+          <button type="button" class="preset-pill" data-preset="dazuowen_lu">大作文·群众路线</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卡片 2：资料与参考答案（极简轻量折叠组） -->
+    <div class="card card-fold-group">
+      <div class="fold-row" id="grade-material-toggle">
+        <div class="card-title-group">
+          <span class="card-title-text">给定资料</span>
+          <span class="tag-subtle">按题目提供</span>
+        </div>
+        <span class="accordion-arrow" id="grade-material-arrow">展开 ▾</span>
+      </div>
+      <div class="material-content is-collapsed" id="grade-material-wrap">
+        <textarea class="input-box material-textarea" id="grade-material" rows="5" placeholder="题目依赖给定资料时，请粘贴资料原文；缺少关键材料时请先补充，再进行批改。"></textarea>
+      </div>
+
+      <div class="fold-divider"></div>
+
+      <div class="fold-row" id="grade-reference-toggle">
+        <div class="card-title-group">
+          <span class="card-title-text">参考答案</span>
+          <span class="tag-subtle">选填</span>
+        </div>
+        <span class="accordion-arrow" id="grade-reference-arrow">展开 ▾</span>
+      </div>
+      <div class="reference-content is-collapsed" id="grade-reference-wrap">
+        <textarea class="input-box" id="grade-reference" rows="4" placeholder="粘贴官方或参考答案，AI 会比对采分点覆盖率。"></textarea>
+      </div>
+    </div>
+
+    <!-- 卡片 4：考生答题卡（纯净无噪答题纸） -->
+    <div class="card card-answer-sheet">
+      <div class="card-head-row">
+        <div class="card-title-group">
+          <span class="card-title-text">作答内容</span>
+          <span class="pill-word-counter"><strong id="grade-words">0</strong> 字</span>
+        </div>
+        <div class="answer-tools">
+          <button class="tool-btn tool-btn-camera" id="grade-scan" type="button">
+            <svg class="tool-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            拍照识别
+          </button>
+          <input type="file" id="grade-file" accept="image/*" capture="environment" hidden>
+          <button class="tool-btn" id="grade-fill-sample" type="button">范例</button>
+          <button class="tool-btn" id="grade-clear-answer" type="button">清空</button>
+        </div>
+      </div>
+      <div class="answer-sheet-canvas">
+        <textarea class="input-box answer-textarea" id="grade-answer" rows="9" placeholder="在此输入你的作答，获取五维打分、逐句红笔朱批与改写示范。"></textarea>
+      </div>
+      <div class="answer-footer-row">
+        <span class="length-status-badge" id="grade-length-hint">尚未落笔</span>
+        <span class="length-standard-tip" id="grade-length-standard">按题目要求作答</span>
+      </div>
+      <p class="field-hint" id="grade-scan-status"></p>
+    </div>
+
+    <!-- 底部主操作区 -->
+    <div class="action-submit-card">
+      <button class="btn-submit-mobile" id="grade-submit" type="button">开始智能批改</button>
+      <p class="field-hint text-center" id="grade-tip"></p>
+    </div>
+  </section>
+
+  <!-- 2. 结果 #/result -->
+  <section class="view" id="view-result" hidden>
+    <div class="card" id="result-score-card">
+      <div class="card-title">本次训练指数（非官方成绩）</div>
+      <div class="score-line">
+        <span class="score-num" id="result-total">—</span>
+        <span class="score-max">分</span>
+        <span class="grade-badge" id="result-grade" hidden></span>
+      </div>
+      <div id="result-dims"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">批改报告</div>
+      <div class="status-line">
+        <span class="muted" id="result-status"></span>
+        <span class="muted" id="result-meta"></span>
+      </div>
+      <div id="result-error" class="alert alert-danger" hidden></div>
+      <div class="md" id="result-body"></div>
+    </div>
+
+    <div class="card" id="result-issues-card" hidden>
+      <div class="card-title">逐条批注</div>
+      <div id="result-issues"></div>
+    </div>
+
+    <div class="card" id="result-upgrade-card" hidden>
+      <div class="card-title">升格示范</div>
+      <div class="upgrade-body" id="result-upgrade"></div>
+    </div>
+
+    <div class="card" id="result-paper-card" hidden>
+      <div class="card-title">原卷</div>
+      <div class="md" id="result-paper"></div>
+    </div>
+
+    <div class="card">
+      <div class="row gap">
+        <button class="btn-primary" id="result-copy" type="button">复制全文</button>
+        <button class="btn-ghost" id="result-again" type="button">再批一篇</button>
+      </div>
+      <button class="btn-ghost btn-sm mt" id="result-retry" type="button">重新批改这一篇</button>
+    </div>
+  </section>
+
+  <!-- 3. 陪练 #/chat -->
+  <section class="view" id="view-chat" hidden>
+    <div class="card" id="chat-chips-card">
+      <div class="card-title">快捷提问</div>
+      <div id="chat-chips"></div>
+      <div class="row-between mt">
+        <span class="muted" id="chat-mode-tip"></span>
+        <button class="btn-ghost btn-sm" id="chat-new" type="button">新对话</button>
+      </div>
+    </div>
+    <div id="chat-list"></div>
+    <div id="chat-error" class="alert alert-danger" hidden></div>
+  </section>
+
+  <!-- 4. 真题 #/papers -->
+  <section class="view" id="view-papers" hidden>
+    <div class="card">
+      <div class="card-title">真题目录与练习</div>
+      <div id="papers-list"></div>
+    </div>
+  </section>
+
+  <!-- 5. 备考 #/study -->
+  <section class="view" id="view-study" hidden>
+    <div class="card">
+      <div class="card-title">备考规划</div>
+      <div class="field">
+        <label class="field-label" for="study-level">基础水平</label>
+        <select class="input-box" id="study-level"></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="study-hours">每天能投入</label>
+        <select class="input-box" id="study-hours"></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="study-target">目标岗位</label>
+        <select class="input-box" id="study-target"></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="study-weeks">距离考试</label>
+        <select class="input-box" id="study-weeks"></select>
+      </div>
+      <button class="btn-primary" id="study-submit" type="button">生成备考计划</button>
+      <p class="field-hint" id="study-status"></p>
+    </div>
+    <div class="card" id="study-error-card" hidden>
+      <div class="card-title">生成失败</div>
+      <p class="field-hint danger" id="study-error"></p>
+      <div class="row gap">
+        <button class="btn-ghost" id="study-retry" type="button">重试</button>
+        <button class="btn-ghost" id="study-goto-settings" type="button">去设置</button>
+      </div>
+    </div>
+    <div class="card" id="study-plan-card" hidden>
+      <div class="row-between">
+        <div class="card-title mb0">计划与打卡</div>
+        <div class="row gap">
+          <button class="btn-ghost btn-sm" id="study-copy" type="button">复制全文</button>
+          <button class="btn-ghost btn-sm" id="study-reset" type="button">重置打卡</button>
+        </div>
+      </div>
+      <div id="study-checkins"></div>
+      <div class="md" id="study-plan"></div>
+    </div>
+  </section>
+
+  <!-- 6. 历史 #/history -->
+  <section class="view" id="view-history" hidden>
+    <div class="card">
+      <div class="row-between">
+        <div class="card-title mb0">批改与对话记录</div>
+        <button class="btn-ghost btn-sm" id="history-clear" type="button">清空</button>
+      </div>
+      <div class="tabs" id="history-tabs">
+        <button class="chip chip-active" data-filter="all" type="button">全部</button>
+        <button class="chip" data-filter="grade" type="button">批改</button>
+        <button class="chip" data-filter="chat" type="button">对话</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </section>
+
+  <!-- 7. 设置 #/settings -->
+  <section class="view" id="view-settings" hidden>
+    <div class="card official-card">
+      <span class="module-eyebrow">官方共享模型</span>
+      <h2 id="settings-official-title">共享模型状态读取中</h2>
+      <p class="muted" id="settings-official-description">模型由站主电脑上的 OpenCode Go 提供。电脑和桥接服务需要保持运行；当前共享模型仅处理文本。</p>
+      <p class="field-hint" id="settings-official-status"></p>
+      <button class="btn-primary btn-block" id="settings-official-enable" type="button" hidden>将当前智谱 Key 设为官方共享</button>
+      <p class="field-hint" id="settings-official-result"></p>
+    </div>
+    <div class="my-shortcuts">
+      <a href="#/history">批改历史 <span>查看练习记录 →</span></a>
+      <a href="#/study">备考计划 <span>安排学习节奏 →</span></a>
+    </div>
+    <div class="card">
+      <div class="card-title">接入方式</div>
+      <div class="tabs" id="settings-mode">
+        <button class="chip" data-mode="server" type="button">官方模型</button>
+        <button class="chip" data-mode="selfkey" type="button">自带 Key 模式</button>
+      </div>
+      <p class="field-hint" id="settings-mode-hint"></p>
+      <div class="field">
+        <label class="field-label" for="settings-code">访问口令</label>
+        <input class="input-box" id="settings-code" type="password" autocomplete="off" placeholder="输入分享给你的测试口令">
+        <p class="field-hint">两种模式都要校验口令，存在本机浏览器，不随请求外传以外的任何地方保存。</p>
+      </div>
+    </div>
+
+    <div class="card" id="settings-guide-card">
+      <div class="card-title">推荐模型方案</div>
+      <p class="field-hint">把单文件版发给朋友（手机上本地打开）时，只有标「手机直连可用」的厂商能直接调通；网址版（服务器转发）则所有厂商都能用。点「一键配置」会自动切到自带 Key 模式并填好地址与模型。</p>
+      <div id="settings-guide"></div>
+    </div>
+
+    <div class="card" id="settings-selfkey" hidden>
+      <div class="card-title">自带 Key</div>
+      <div class="grid-presets" id="settings-presets"></div>
+      <div class="field">
+        <label class="field-label" for="settings-baseurl">模型地址 baseURL</label>
+        <input class="input-box" id="settings-baseurl" type="text" autocomplete="off" placeholder="https://open.bigmodel.cn/api/paas/v4">
+      </div>
+      <div class="field">
+        <label class="field-label" for="settings-apikey">API Key</label>
+        <input class="input-box" id="settings-apikey" type="password" autocomplete="off" placeholder="你的模型密钥">
+      </div>
+      <div class="field">
+        <label class="field-label" for="settings-model">模型</label>
+        <select class="input-box" id="settings-model"></select>
+        <input class="input-box mt-s" id="settings-model-custom" type="text" autocomplete="off" placeholder="或手输模型名">
+      </div>
+      <div class="field">
+        <label class="field-label" for="settings-vision">视觉模型（拍照识别用）</label>
+        <select class="input-box" id="settings-vision"></select>
+        <input class="input-box mt-s" id="settings-vision-custom" type="text" autocomplete="off" placeholder="或手输视觉模型名">
+      </div>
+      <p class="field-hint" id="settings-preset-doc"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">连通性</div>
+      <div class="row gap">
+        <button class="btn-primary" id="settings-test" type="button">测试连接</button>
+        <button class="btn-ghost" id="settings-save" type="button">保存设置</button>
+      </div>
+      <p class="field-hint" id="settings-test-result"></p>
+      <p class="field-hint" id="settings-skill-meta"></p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ 聊天输入区（仅陪练视图显示） ============ -->
+<div class="bottom-bar" id="chat-bar" hidden>
+  <div class="chat-input-row">
+    <textarea class="input-box" id="chat-input" rows="1" placeholder="问一句：这道申论题怎么做"></textarea>
+    <button class="btn-primary btn-send" id="chat-send" type="button">发送</button>
+  </div>
+</div>
+
+<!-- ============ 底部导航 ============ -->
+<nav class="tabbar" id="tabbar">
+  <a class="tab" href="#/grade" data-view="grade">
+    <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span class="tab-label">申论</span>
+  </a>
+  <a class="tab" href="#/chat" data-view="chat">
+    <svg class="tab-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="tab-label">陪练</span>
+  </a>
+  <a class="tab" href="#/papers" data-view="papers">
+    <svg class="tab-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span class="tab-label">真题</span>
+  </a>
+  <a class="tab" href="#/study" data-view="study">
+    <svg class="tab-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    <span class="tab-label">备考</span>
+  </a>
+  <a class="tab" href="#/history" data-view="history">
+    <svg class="tab-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span class="tab-label">历史</span>
+  </a>
+  <a class="tab" href="#/settings" data-view="settings">
+    <svg class="tab-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="tab-label">我的</span>
+  </a>
+</nav>
+
+<!-- 轻提示 -->
+<div class="toast" id="toast" hidden></div>
+
+<!-- 访问口令弹窗（首次进入 / 口令校验失败时出现） -->
+<div class="modal-mask" id="code-modal" hidden>
+  <div class="modal">
+    <div class="card-title">请输入访问口令</div>
+    <p class="field-hint" id="code-modal-hint">输入站主分享的测试口令，即可使用官方 GLM-5.3-Flash，无需填写 API Key。</p>
+    <input class="input-box" id="code-modal-input" type="password" autocomplete="off" placeholder="访问口令">
+    <div class="row gap mt">
+      <button class="btn-primary" id="code-modal-ok" type="button">确定</button>
+      <button class="btn-ghost" id="code-modal-cancel" type="button">稍后再说</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/vendor/prompts.js"></script>
+<script src="js/vendor/references.js"></script>
+<script src="js/vendor/papers.js"></script>
+<script src="js/vendor/paper-catalog.js"></script>
+<script src="js/vendor/coverage.js"></script>
+<script src="js/vendor/papers-index.js"></script>
+<script src="js/store.js"></script>
+<script src="js/md.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
