@@ -8,6 +8,7 @@
 [![Calibration: MAE 4.1 | QWK 0.71](https://img.shields.io/badge/Calibration-MAE%204.1%20%7C%20QWK%200.71-orange.svg)](docs/LLM_SCORING_BIAS_ANALYSIS.md)
 
 > **Author**: Zhanjun Yang  
+> **GitHub Pages Live Demo**: [https://yyhhb501-bot.github.io/llm-essay-grading-calibration/](https://yyhhb501-bot.github.io/llm-essay-grading-calibration/)  
 > **Technical Blog**: [From Hallucinated Grades to Statistical Rigor: Calibrating LLMs for High-Stakes Civil-Service Essay Scoring](docs/LLM_ESSAY_GRADING_CALIBRATION_BLOG.md)  
 > **Online Deployment**: [https://shenlundawang.asia](https://shenlundawang.asia) (300+ Users, 2,400+ Essays Evaluated)  
 
