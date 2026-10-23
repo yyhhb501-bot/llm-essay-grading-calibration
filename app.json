@@ -1,0 +1,60 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/grade/grade",
+    "pages/result/result",
+    "pages/chat/chat",
+    "pages/papers/papers",
+    "pages/study/study",
+    "pages/mine/mine",
+    "pages/settings/settings",
+    "pages/history/history",
+    "pages/service/service",
+    "pages/account/account"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#F6F7F9",
+    "navigationBarTitleText": "作文批改大人",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F6F7F9"
+  },
+  "tabBar": {
+    "color": "#86909C",
+    "selectedColor": "#FF6B35",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "icons/home.png",
+        "selectedIconPath": "icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/grade/grade",
+        "text": "批改",
+        "iconPath": "icons/grade.png",
+        "selectedIconPath": "icons/grade-active.png"
+      },
+      {
+        "pagePath": "pages/chat/chat",
+        "text": "解题",
+        "iconPath": "icons/chat.png",
+        "selectedIconPath": "icons/chat-active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "icons/mine.png",
+        "selectedIconPath": "icons/mine-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "usingComponents": {
+    "privacy-dialog": "/components/privacy-dialog/privacy-dialog"
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

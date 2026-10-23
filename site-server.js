@@ -39,7 +39,80 @@ var DEFAULT_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
 var DEFAULT_MODEL = 'glm-4-flash';
 var SHARED_FILE = process.env.SLZ_SHARED_CONFIG_FILE || path.join(ROOT, '.runtime', 'shared-model.json');
 var sharedConfig = null;
+var paperDatabase = null;
 try { sharedConfig = JSON.parse(fs.readFileSync(SHARED_FILE, 'utf8')); } catch (e) {}
+
+// Account storage never falls back to the old shared access-code authorization.
+var authReady = import('./server/auth.mjs').then(function (module) {
+  var adapter = require('./server/auth-local.cjs');
+  var database = adapter.openAuthDatabase(process.env.SLZ_AUTH_DB_FILE || path.join(ROOT, '.runtime', 'accounts.sqlite'));
+  paperDatabase = database;
+  return module.createAuth({
+    db: database,
+    getInviteCode: function () {
+      return process.env.REGISTER_INVITE_CODE || (sharedConfig && sharedConfig.accessCode) || ACCESS_CODE;
+    }
+  });
+}).catch(function () { return null; });
+
+function accountRequest(req, body) {
+  var protocol = req.socket.encrypted ? 'https' : 'http';
+  if (process.env.TRUST_PROXY === '1' && req.headers['x-forwarded-proto'] === 'https') protocol = 'https';
+  return new Request(protocol + '://' + req.headers.host + req.url, {
+    method: req.method,
+    headers: req.headers,
+    body: req.method === 'GET' || req.method === 'HEAD' ? undefined : body
+  });
+}
+
+function accountIp(req) {
+  if (process.env.TRUST_PROXY === '1') {
+    var forwarded = req.headers['cf-connecting-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0];
+    if (forwarded) return String(forwarded).trim();
+  }
+  return req.socket.remoteAddress || 'unknown';
+}
+
+async function sendAccountResponse(res, response) {
+  res.writeHead(response.status, Object.fromEntries(response.headers));
+  res.end(Buffer.from(await response.arrayBuffer()));
+}
+
+function accountUnavailable(res) {
+  sendJson(res, 503, { error: '账号服务暂时不可用，请稍后重试。', code: 'AUTH_UNAVAILABLE' });
+}
+
+function readAccountBody(req) {
+  return new Promise(function (resolve, reject) {
+    var chunks = [], size = 0, tooLarge = false;
+    req.on('data', function (chunk) {
+      size += chunk.length;
+      if (size > 16384) {
+        if (!tooLarge) { tooLarge = true; chunks = []; reject(new Error('BODY_TOO_LARGE')); }
+        return; // Drain without retaining bytes; do not destroy the response socket.
+      }
+      if (!tooLarge) chunks.push(chunk);
+    });
+    req.on('end', function () { if (!tooLarge) resolve(Buffer.concat(chunks)); });
+    req.on('error', reject);
+  });
+}
+
+async function handleAccount(req, res) {
+  var auth = await authReady;
+  if (!auth) { accountUnavailable(res); return; }
+  var body;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    try { body = await readAccountBody(req); }
+    catch (error) {
+      sendJson(res, error.message === 'BODY_TOO_LARGE' ? 413 : 400, { error: '提交的内容过大或无法读取。' });
+      return;
+    }
+  }
+  await sendAccountResponse(res, await auth.handle(accountRequest(req, body), {
+    ip: accountIp(req), native: String(req.url).split('?')[0].indexOf('/api/mp/auth/') === 0
+  }));
+}
 
 function isLocalAdmin(req) {
   var remote = req.socket.remoteAddress;
@@ -124,6 +197,7 @@ function serveStatic(req, res) {
     return;
   }
   var head = { 'Content-Type': contentType(file) };
+  if (/\.html$/i.test(file)) head['Cache-Control'] = 'no-store';
   if (/\.(png|jpe?g|gif|svg|ico)$/i.test(file)) head['Cache-Control'] = 'public, max-age=86400';
   res.writeHead(200, head);
   if (req.method === 'HEAD') {
@@ -174,15 +248,6 @@ function readBody(req, limit) {
 
 // ---------------------------------------------------------------- /api/chat
 
-/** 访问口令校验：正确返回 null，不正确返回中文说明 */
-function checkAccessCode(req) {
-  var expected = sharedConfig ? sharedConfig.accessCode : ACCESS_CODE;
-  if (!expected) return null;
-  var got = String(req.headers['x-access-code'] || '').trim();
-  if (got !== expected) return '访问口令不正确，请向站主要一下口令后，在设置页重新填写。';
-  return null;
-}
-
 /** 从上游错误体里尽力抠出厂商原话 */
 function pickServerMessage(text) {
   var raw = text == null ? '' : String(text);
@@ -227,11 +292,10 @@ function describeUpstreamError(status, serverMsg) {
  * @param {http.ServerResponse} res
  */
 async function handleChat(req, res) {
-  var codeError = checkAccessCode(req);
-  if (codeError) {
-    sendJson(res, 401, { error: codeError });
-    return;
-  }
+  var auth = await authReady;
+  if (!auth) { accountUnavailable(res); return; }
+  var authorization = await auth.authorize(accountRequest(req), { native: String(req.url).split('?')[0] === '/api/mp/chat' });
+  if (authorization.response) { await sendAccountResponse(res, authorization.response); return; }
 
   var raw;
   try {
@@ -349,6 +413,29 @@ async function handleChat(req, res) {
 var server = http.createServer(function (req, res) {
   var pathname = String(req.url || '/').split('?')[0];
 
+  if (pathname === '/api/admin/overview') {
+    Promise.all([authReady, import('./server/admin.mjs')]).then(function (parts) {
+      if (!parts[0]) { accountUnavailable(res); return; }
+      return parts[1].adminOverview(accountRequest(req), { auth: parts[0], db: paperDatabase })
+        .then(function (response) { return sendAccountResponse(res, response); });
+    }).catch(function () { if (!res.headersSent) accountUnavailable(res); else res.end(); });
+    return;
+  }
+
+  if (pathname.indexOf('/api/mp/papers/') === 0) {
+    Promise.all([authReady, import('./server/paper-library.mjs')]).then(function (parts) {
+      if (!parts[0]) { accountUnavailable(res); return; }
+      return parts[1].servePracticePaper(accountRequest(req), { auth: parts[0], db: paperDatabase })
+        .then(function (response) { return sendAccountResponse(res, response); });
+    }).catch(function () { if (!res.headersSent) accountUnavailable(res); else res.end(); });
+    return;
+  }
+
+  if (pathname.indexOf('/api/auth/') === 0 || pathname.indexOf('/api/acct/') === 0 || pathname.indexOf('/api/mp/auth/') === 0) {
+    handleAccount(req, res).catch(function () { if (!res.headersSent) accountUnavailable(res); else res.end(); });
+    return;
+  }
+
   if (pathname === '/api/admin/shared-model') {
     if (req.method !== 'POST') { sendJson(res, 405, { error: '只支持 POST。' }); return; }
     configureSharedModel(req, res).catch(function () { sendJson(res, 400, { error: '共享配置未保存，请重试。' }); });
@@ -356,10 +443,14 @@ var server = http.createServer(function (req, res) {
   }
 
   if (pathname === '/api/health') {
-    sendJson(res, 200, { ok: true, officialModel: sharedConfig ? sharedConfig.model : DEFAULT_MODEL, sharedReady: !!sharedConfig });
+    authReady.then(function (auth) {
+      sendJson(res, 200, { ok: true, officialModel: sharedConfig ? sharedConfig.model : DEFAULT_MODEL,
+        sharedReady: !!(sharedConfig || ZHIPU_API_KEY), authRequired: true, authReady: !!auth,
+        registrationReady: !!auth && auth.registrationReady() });
+    });
     return;
   }
-  if (pathname === '/api/chat') {
+  if (pathname === '/api/chat' || pathname === '/api/mp/chat') {
     if (req.method !== 'POST') {
       sendJson(res, 405, { error: '请求方法不对，/api/chat 只接受 POST。' });
       return;
@@ -381,7 +472,7 @@ server.listen(PORT, function () {
   console.log('[site-server] 申论朱批网站版已启动');
   console.log('  本地地址   http://127.0.0.1:' + PORT + '/');
   console.log('  静态目录   ' + SITE_DIR);
-  console.log('  访问口令   ' + (ACCESS_CODE ? '已设置' : '未设置（不校验，仅限本地调试）'));
+  console.log('  账号登录   已启用；邀请码使用 REGISTER_INVITE_CODE 或原共享口令');
   console.log('  模型密钥   ' + (ZHIPU_API_KEY ? '已设置' : '未设置（可用自带 Key 模式）'));
   console.log('  上游地址   ' + (process.env.ZHIPU_BASE_URL || DEFAULT_BASE_URL));
 });

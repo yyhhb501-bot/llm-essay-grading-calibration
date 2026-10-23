@@ -1,0 +1,48 @@
+[
+  {
+    "timestamp": "2026-10-23T13:18:06Z",
+    "batch_size": 80,
+    "calibrated_metrics": {
+      "mae": 3.62,
+      "rmse": 4.41,
+      "pearson_r": 0.862,
+      "qwk": 0.789
+    },
+    "raw_llm_metrics": {
+      "mae": 6.77,
+      "rmse": 8.71,
+      "pearson_r": 0.527,
+      "qwk": 0.519
+    },
+    "guardrail_checks": {
+      "mae_threshold_met": true,
+      "qwk_threshold_met": true,
+      "mae_improved_over_raw": true,
+      "qwk_improved_over_raw": true
+    },
+    "status": "PASSED"
+  },
+  {
+    "timestamp": "2026-10-23T13:19:32Z",
+    "batch_size": 80,
+    "calibrated_metrics": {
+      "mae": 3.8,
+      "rmse": 4.63,
+      "pearson_r": 0.878,
+      "qwk": 0.8
+    },
+    "raw_llm_metrics": {
+      "mae": 6.13,
+      "rmse": 7.8,
+      "pearson_r": 0.632,
+      "qwk": 0.592
+    },
+    "guardrail_checks": {
+      "mae_threshold_met": true,
+      "qwk_threshold_met": true,
+      "mae_improved_over_raw": true,
+      "qwk_improved_over_raw": true
+    },
+    "status": "PASSED"
+  }
+]

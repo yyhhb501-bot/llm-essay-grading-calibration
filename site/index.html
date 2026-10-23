@@ -10,7 +10,43 @@
   <link rel="apple-touch-icon" href="assets/logo-144.png">
   <link rel="stylesheet" href="css/site.css">
 </head>
-<body>
+<body class="auth-locked">
+
+<section class="auth-screen" id="auth-screen" aria-label="账号登录">
+  <div class="auth-shell">
+    <div class="auth-intro">
+      <a class="auth-brand" href="#/grade"><span class="auth-brand-mark">批</span>作文批改大人</a>
+      <p class="auth-eyebrow">你的申论练习空间</p>
+      <h1>每一次落笔，<br>都更进一步。</h1>
+      <p class="auth-intro-copy">从一篇作答开始，梳理要点、打磨表达，<br class="auth-desktop-break">留下属于自己的练习记录。</p>
+      <div class="auth-paper" aria-hidden="true"><span>申论 · 练习笔记</span><i></i><i></i><i></i><b>有据可循，有所进步。</b></div>
+      <p class="auth-local-note">历史与模型设置按账号保存在当前浏览器，暂不跨设备同步。</p>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs" role="tablist" aria-label="选择登录或注册">
+        <button id="auth-login-tab" type="button" role="tab" aria-selected="true" aria-controls="auth-form">登录</button>
+        <button id="auth-register-tab" type="button" role="tab" aria-selected="false" aria-controls="auth-form">注册账号</button>
+      </div>
+      <h2 id="auth-title">欢迎回来</h2>
+      <p class="auth-subtitle" id="auth-subtitle">登录后继续批改与练习。</p>
+      <p id="auth-loading" class="auth-loading" role="status">正在确认登录状态…</p>
+      <p id="auth-error" class="auth-error" role="alert" hidden></p>
+      <button id="auth-retry" class="btn-ghost btn-block" type="button" hidden>重新连接</button>
+      <form id="auth-form" hidden>
+        <div class="field"><label class="field-label" for="auth-username">用户名</label><input class="input-box" id="auth-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24" placeholder="输入你的用户名" required></div>
+        <div class="field"><label class="field-label" for="auth-password">密码</label><input class="input-box" id="auth-password" name="password" type="password" autocomplete="current-password" maxlength="128" placeholder="输入密码" required></div>
+        <div id="auth-register-fields" hidden>
+          <div class="field"><label class="field-label" for="auth-confirm">确认密码</label><input class="input-box" id="auth-confirm" name="confirmPassword" type="password" autocomplete="new-password" maxlength="128" placeholder="再次输入密码"></div>
+          <div class="field"><label class="field-label" for="auth-invite">注册邀请码</label><input class="input-box" id="auth-invite" name="inviteCode" type="password" autocomplete="off" maxlength="256" placeholder="输入站主发给你的邀请码"><p class="field-hint">原访问口令可用作邀请码，只在注册时填写一次。</p></div>
+        </div>
+        <button class="btn-primary btn-block auth-submit" id="auth-submit" type="submit">登录并进入</button>
+        <button class="btn-ghost btn-block" id="auth-guest-btn" type="button" style="margin-top:10px;font-size:13px;color:#57606a;border:1px dashed #d0d7de;">免登录快速体验（游客模式）</button>
+      </form>
+      <p class="auth-bottom-note" id="auth-bottom-note">新同学请先注册。忘记密码可联系站主。</p>
+      <noscript><p>请启用 JavaScript 后使用账号登录。</p></noscript>
+    </div>
+  </div>
+</section>
 
 <!-- ============ 顶栏 ============ -->
 <header class="topbar">
@@ -23,6 +59,7 @@
     </div>
     <div class="topbar-actions">
       <a class="topbar-link" href="#/papers">真题库</a>
+      <div class="account-tools" id="account-tools" hidden><span id="account-username"></span><button class="account-logout" id="account-logout" type="button">退出</button></div>
     </div>
   </div>
 </header>
@@ -131,6 +168,14 @@
         <span class="score-num" id="result-total">—</span>
         <span class="score-max">分</span>
         <span class="grade-badge" id="result-grade" hidden></span>
+      </div>
+      <div class="calibration-row" id="result-calibration-row" style="margin:8px 0 12px;padding:8px 12px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;" hidden>
+        <div>
+          <span style="color:#64748b;">统计校准预测分：</span>
+          <strong id="result-calibrated-score" style="color:#0f172a;font-size:14px;">—</strong>
+          <span style="color:#94a3b8;font-size:11px;">（Ridge/GBDT 消除偏差）</span>
+        </div>
+        <div id="result-consistency-badge" style="background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:12px;font-weight:500;font-size:11px;">评分一致性：高置信度</div>
       </div>
       <div id="result-dims"></div>
     </div>
@@ -253,6 +298,11 @@
 
   <!-- 7. 设置 #/settings -->
   <section class="view" id="view-settings" hidden>
+    <div class="card account-card" id="settings-account" hidden>
+      <div class="card-head-row"><span class="card-title-text">我的账号</span><button class="btn-ghost btn-sm" id="account-password-open" type="button">修改密码</button></div>
+      <p id="settings-account-name"></p>
+      <p class="field-hint">历史、计划与模型设置按账号保存在当前浏览器，暂不跨设备同步。旧版未归属账号的记录仍保留，不会自动归入新账号。</p>
+    </div>
     <div class="card official-card">
       <span class="module-eyebrow">官方共享模型</span>
       <h2 id="settings-official-title">共享模型状态读取中</h2>
@@ -272,11 +322,6 @@
         <button class="chip" data-mode="selfkey" type="button">自带 Key 模式</button>
       </div>
       <p class="field-hint" id="settings-mode-hint"></p>
-      <div class="field">
-        <label class="field-label" for="settings-code">访问口令</label>
-        <input class="input-box" id="settings-code" type="password" autocomplete="off" placeholder="输入分享给你的测试口令">
-        <p class="field-hint">两种模式都要校验口令，存在本机浏览器，不随请求外传以外的任何地方保存。</p>
-      </div>
     </div>
 
     <div class="card" id="settings-guide-card">
@@ -361,25 +406,25 @@
 <!-- 轻提示 -->
 <div class="toast" id="toast" hidden></div>
 
-<!-- 访问口令弹窗（首次进入 / 口令校验失败时出现） -->
-<div class="modal-mask" id="code-modal" hidden>
-  <div class="modal">
-    <div class="card-title">请输入访问口令</div>
-    <p class="field-hint" id="code-modal-hint">输入站主分享的测试口令，即可使用官方 GLM-5.3-Flash，无需填写 API Key。</p>
-    <input class="input-box" id="code-modal-input" type="password" autocomplete="off" placeholder="访问口令">
-    <div class="row gap mt">
-      <button class="btn-primary" id="code-modal-ok" type="button">确定</button>
-      <button class="btn-ghost" id="code-modal-cancel" type="button">稍后再说</button>
-    </div>
-  </div>
-</div>
-
 <script src="js/vendor/prompts.js"></script>
 <script src="js/vendor/references.js"></script>
 <script src="js/vendor/papers.js"></script>
 <script src="js/vendor/paper-catalog.js"></script>
 <script src="js/vendor/coverage.js"></script>
+<script src="js/vendor/calibration.js"></script>
 <script src="js/vendor/papers-index.js"></script>
+<dialog class="password-dialog" id="password-dialog" aria-labelledby="password-title">
+  <form id="password-form">
+    <input id="password-username" name="username" autocomplete="username" hidden readonly>
+    <h2 id="password-title">修改密码</h2><p class="field-hint">修改后，其他设备的原登录会话将失效。</p>
+    <div class="field"><label class="field-label" for="password-current">当前密码</label><input class="input-box" id="password-current" type="password" autocomplete="current-password" maxlength="128" required></div>
+    <div class="field"><label class="field-label" for="password-new">新密码</label><input class="input-box" id="password-new" type="password" autocomplete="new-password" minlength="8" maxlength="128" required><p class="field-hint">8–128 个字符，请使用与其他网站不同的密码。</p></div>
+    <div class="field"><label class="field-label" for="password-confirm">确认新密码</label><input class="input-box" id="password-confirm" type="password" autocomplete="new-password" maxlength="128" required></div>
+    <p class="auth-error" id="password-error" role="alert" hidden></p>
+    <div class="row gap"><button class="btn-primary" id="password-submit" type="submit">保存新密码</button><button class="btn-ghost" id="password-cancel" type="button">取消</button></div>
+  </form>
+</dialog>
+<script src="js/auth.js"></script>
 <script src="js/store.js"></script>
 <script src="js/md.js"></script>
 <script src="js/api.js"></script>

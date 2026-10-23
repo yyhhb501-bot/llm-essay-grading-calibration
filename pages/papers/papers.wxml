@@ -1,0 +1,64 @@
+<view class="page">
+  <view class="intro">
+    <view class="intro-title">试卷练习</view>
+    <view class="muted intro-sub">收录 {{totalPapers}} 套、{{totalQuestions}} 道题，按需读取。第三方收录内容含回忆版，尚未逐卷对照原文核验。</view>
+  </view>
+  <view class="library-tabs">
+    <view class="library-tab {{mode === 'full' ? 'library-tab-active' : ''}}" data-mode="full" bindtap="onModeTap">收录试卷</view>
+    <view class="library-tab {{mode === 'example' ? 'library-tab-active' : ''}}" data-mode="example" bindtap="onModeTap">离线改编示例</view>
+  </view>
+  <view class="card library-filter">
+    <input class="input-box" value="{{keyword}}" bindinput="onKeywordInput" placeholder="搜索试卷名称、地区或卷别" />
+    <view class="library-filter-row">
+      <picker class="library-picker" range="{{years}}" value="{{yearIndex}}" bindchange="onYearChange"><view>{{years[yearIndex]}} ▾</view></picker>
+      <picker wx:if="{{mode === 'full'}}" class="library-picker" range="{{regions}}" value="{{regionIndex}}" bindchange="onRegionChange"><view>{{regions[regionIndex]}} ▾</view></picker>
+    </view>
+    <view class="muted">符合条件 {{filteredCount}} 套 · 已展示 {{papers.length}} 套</view>
+  </view>
+  <view wx:if="{{mode === 'full' && !authenticated}}" class="card">
+    <view class="card-title">登录后读取收录试卷</view>
+    <view class="muted">使用现有网站账号即可。离线改编示例无需登录。</view>
+    <button class="btn-primary library-login" bindtap="onGoAccount">登录 / 注册</button>
+  </view>
+  <view wx:if="{{mode === 'example'}}" class="note">以下为摘要改编练习，非官方原卷；材料和题干用于日常训练。</view>
+  <view wx:if="{{!papers.length}}" class="empty"><view class="empty-title">没有匹配的试卷</view><view class="empty-sub">请调整年份、地区或搜索词。</view></view>
+
+  <view class="card paper {{item.id === expandedId ? 'paper-open' : ''}}" wx:for="{{papers}}" wx:key="id">
+    <view class="paper-head" data-id="{{item.id}}" bindtap="togglePaper">
+      <view class="flex-1">
+        <view class="paper-title">{{item.title}}</view>
+        <view class="paper-meta">{{item.year}} 年 · {{item.region}} · {{item.questions}} 题</view>
+        <view wx:if="{{item.recalled}}" class="library-recalled">回忆版 · 请核对来源</view>
+      </view>
+      <view class="arrow {{item.id === expandedId ? 'arrow-open' : ''}}"></view>
+    </view>
+    <view wx:if="{{item.id === expandedId}}">
+      <view wx:if="{{loading}}" class="library-status">正在读取本套材料与题目…</view>
+      <view wx:if="{{errorMsg}}" class="library-error"><view>{{errorMsg}}</view><button class="btn-ghost" bindtap="onRetry">重试读取</button></view>
+      <block wx:if="{{activePaper}}">
+        <view class="note">{{activePaper.sourceNote}}</view>
+        <view wx:if="{{activePaper.sourceUrl}}" class="library-source"><text selectable="{{true}}">来源：{{activePaper.sourceUrl}}</text><text class="link" bindtap="onCopySource">复制来源</text></view>
+        <view wx:if="{{activePaper.materials.length}}" class="library-materials">
+          <view class="sub-label">给定资料</view>
+          <view class="library-material" wx:for="{{activePaper.materials}}" wx:for-item="mat" wx:key="index">
+            <view class="library-material-head">资料 {{mat.no}} · {{mat.length}} 字</view>
+            <text class="library-text" selectable="{{true}}">{{mat.expanded ? mat.text : mat.preview}}{{!mat.expanded && mat.length > 320 ? '…' : ''}}</text>
+            <view wx:if="{{mat.length > 320}}" class="library-expand" data-index="{{mat.index}}" bindtap="onToggleMaterial">{{mat.expanded ? '收起' : '展开本段全文'}}</view>
+          </view>
+          <view class="field-hint">去作答会载入整卷资料，请按题干确定适用范围。</view>
+        </view>
+        <view class="q" wx:for="{{activePaper.questions}}" wx:for-item="q" wx:key="index">
+          <view class="q-head"><text class="q-no">第 {{q.no}} 题</text><text class="q-type">{{q.scoreText}}</text></view>
+          <text class="q-title library-text" selectable="{{true}}">{{q.stem}}</text>
+          <view class="library-requirements" wx:for="{{q.requirements}}" wx:for-item="req" wx:key="*this">{{req}}</view>
+          <block wx:if="{{q.exampleMaterial}}"><view class="sub-label">改编材料摘要</view><text class="library-text">{{q.exampleMaterial}}</text></block>
+          <view wx:if="{{q.keypoints.length}}" class="field-hint">练习关键词（非官方答案）：<text wx:for="{{q.keypoints}}" wx:for-item="point" wx:key="*this">{{point}}；</text></view>
+          <button class="btn-primary q-btn" data-index="{{q.index}}" bindtap="onAnswer">去作答</button>
+        </view>
+      </block>
+    </view>
+  </view>
+  <button wx:if="{{hasMore}}" class="btn-ghost" bindtap="onLoadMore">再显示 20 套</button>
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

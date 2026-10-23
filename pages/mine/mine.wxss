@@ -1,0 +1,129 @@
+/* pages/mine/mine.wxss —— 我的页面样式 */
+
+/* ---- 统计卡 ---- */
+.stat-card {
+  display: flex;
+  align-items: center;
+  padding: 34rpx 20rpx;
+  background-color: var(--card);
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 80rpx;
+  background-color: var(--line-light);
+}
+
+.stat-num {
+  font-size: 68rpx;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: -apple-system, "DIN Alternate", sans-serif;
+}
+
+.stat-label {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: var(--muted);
+}
+
+.stat-sub {
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--muted);
+  margin: -8rpx 0 24rpx;
+}
+
+/* ---- 分组标题 ---- */
+.group-title {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--sub);
+  margin: 10rpx 8rpx 14rpx;
+  letter-spacing: 0.5rpx;
+}
+
+/* ---- 列表卡片 ---- */
+.list-card {
+  padding: 16rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 6rpx;
+  border-bottom: 1rpx solid var(--line-light);
+  transition: background-color 0.15s ease;
+}
+
+.list-row:last-child {
+  border-bottom: none;
+}
+
+.list-row:active {
+  opacity: 0.7;
+}
+
+.list-label {
+  font-size: 29rpx;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.list-extra {
+  font-size: 24rpx;
+  color: var(--muted);
+  margin-right: 14rpx;
+  max-width: 320rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extra-ok {
+  color: var(--success);
+  font-weight: 500;
+}
+
+.extra-warn {
+  color: var(--cinnabar);
+  font-weight: 500;
+}
+
+/* 纯 CSS 箭头 */
+.list-arrow {
+  width: 12rpx;
+  height: 12rpx;
+  border-top: 2.5rpx solid var(--muted);
+  border-right: 2.5rpx solid var(--muted);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.list-arrow-danger {
+  border-color: var(--danger);
+  opacity: 0.6;
+}
+
+/* 底部声明 */
+.footer-tip {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 20rpx 16rpx 0;
+}
+/* Account controls share the existing native visual system. */
+.account-summary .card-title { word-break: break-all; }
+.account-action { margin-top: 24rpx; }
+.account-actions { display: flex; margin-top: 24rpx; }
+.account-action-item { flex: 1; margin: 0; }
+.account-action-item + .account-action-item { margin-left: 20rpx; }

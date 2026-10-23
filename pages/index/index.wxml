@@ -1,0 +1,92 @@
+<!-- pages/index/index.wxml —— 首页 -->
+<view class="page">
+
+  <!-- 顶部品牌区 -->
+  <view class="brand">
+    <view class="brand-header-row">
+      <view class="brand-badge">
+        <text class="brand-badge-text">申论</text>
+      </view>
+      <view class="brand-title-wrap">
+        <view class="brand-name">作文批改大人</view>
+        <view class="brand-sub">AI 辅助作文学习 · 当前提供申论专项</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 核心主行动卡片：突出「开始批改」主入口 -->
+  <view class="card hero-card" bindtap="onGoGrade">
+    <view class="hero-left">
+      <view class="hero-tag">核心推荐</view>
+      <view class="hero-title">申论智能精批</view>
+      <view class="hero-desc">五维评分 · 逐句朱批 · 采分点缺失诊断</view>
+    </view>
+    <button class="btn-primary hero-btn" catchtap="onGoGrade">开始批改</button>
+  </view>
+
+  <!-- 四宫格入口 -->
+  <view class="section-title">功能专区</view>
+  <view class="grid">
+    <view
+      class="card grid-item"
+      wx:for="{{entrances}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onEntranceTap">
+      <view class="grid-icon-wrap">
+        <view class="grid-icon">{{item.icon}}</view>
+      </view>
+      <view class="grid-text-wrap">
+        <view class="grid-title">{{item.title}}</view>
+        <view class="grid-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 每日金句：降低视觉优先级，安静雅致 -->
+  <view class="card quote-card">
+    <view class="quote-header">
+      <text class="quote-tag">每日备考心法</text>
+    </view>
+    <view class="quote-content">{{quote}}</view>
+  </view>
+
+  <!-- 最近记录 -->
+  <view class="card recent-card">
+    <view class="row-between recent-header">
+      <view class="card-title recent-title">最近记录</view>
+      <view wx:if="{{hasRecent}}" class="recent-more" bindtap="onViewAll">
+        <text class="muted">全部（{{recentCount}}）</text>
+        <text class="list-arrow"></text>
+      </view>
+    </view>
+
+    <view wx:if="{{hasRecent}}">
+      <view
+        class="recent-item"
+        wx:for="{{recent}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        data-type="{{item.type}}"
+        bindtap="onRecentTap">
+        <view class="row-between recent-head">
+          <text class="recent-title-text flex-1">{{item.title}}</text>
+          <text class="recent-tag">{{item.typeLabel}}</text>
+        </view>
+        <view class="recent-summary">{{item.summary}}</view>
+        <view class="muted recent-time">{{item.timeText}}</view>
+      </view>
+      <view class="divider"></view>
+      <view class="muted recent-tip">点击记录可回看详情。</view>
+    </view>
+
+    <!-- 空态文案：方案 §4 指定的「还没有批改记录，去写第一篇吧」 -->
+    <view wx:else class="recent-empty">
+      <view class="recent-empty-text">还没有批改记录，去写第一篇吧</view>
+      <button class="btn-primary recent-empty-btn" bindtap="onGoGrade">去写第一篇</button>
+    </view>
+  </view>
+
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

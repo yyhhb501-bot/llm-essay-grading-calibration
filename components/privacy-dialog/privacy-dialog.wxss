@@ -1,0 +1,93 @@
+/* components/privacy-dialog/privacy-dialog.wxss —— 隐私授权确认弹窗 */
+
+.privacy-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+  box-sizing: border-box;
+}
+
+.privacy-card {
+  width: 100%;
+  max-width: 620rpx;
+  padding: 44rpx 36rpx;
+  box-sizing: border-box;
+  border-radius: 24rpx;
+  background: #FFFFFF;
+  color: #1D2129;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.12);
+}
+
+.privacy-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1D2129;
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+.privacy-body {
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: #4E5969;
+  margin: 0 0 24rpx 0;
+}
+
+.privacy-link {
+  font-size: 26rpx;
+  color: #FF6B35;
+  background: #FFF2E8;
+  border: none;
+  padding: 12rpx 20rpx;
+  border-radius: 12rpx;
+  text-align: center;
+  margin-bottom: 32rpx;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.privacy-link::after {
+  border: none;
+}
+
+.privacy-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.privacy-actions button {
+  flex: 1;
+  height: 84rpx;
+  line-height: 84rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 12rpx;
+  padding: 0;
+  margin: 0;
+  background: #F2F3F5;
+  color: #4E5969;
+  border: 1rpx solid #E5E6EB;
+}
+
+.privacy-actions button::after {
+  border: none;
+}
+
+.privacy-actions button:active {
+  background: #E5E6EB;
+}
+
+.privacy-actions .privacy-agree {
+  background: #FF6B35;
+  color: #FFFFFF;
+  border: none;
+}
+
+.privacy-actions .privacy-agree:active {
+  background: #E85520;
+}

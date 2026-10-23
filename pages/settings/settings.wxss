@@ -1,0 +1,272 @@
+/* pages/settings/settings.wxss —— 模型接入设置样式 */
+
+.ph {
+  color: var(--muted);
+}
+
+/* ---- 新手引导 ---- */
+.guide-card {
+  border-left: 6rpx solid var(--cinnabar);
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20rpx;
+}
+
+.step-no {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  text-align: center;
+  border-radius: 50%;
+  background-color: var(--cinnabar-soft);
+  color: var(--cinnabar);
+  font-size: 22rpx;
+  font-weight: 700;
+  margin-right: 16rpx;
+  margin-top: 4rpx;
+}
+
+.step-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4rpx;
+}
+
+/* ---- 预设宫格 ---- */
+.preset-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -6rpx;
+}
+
+.preset-item {
+  width: calc(33.33% - 12rpx);
+  margin: 0 6rpx 14rpx 6rpx;
+  padding: 20rpx 8rpx;
+  text-align: center;
+  border-radius: 14rpx;
+  background-color: #F8F9FA;
+  border: 1rpx solid var(--line);
+  color: var(--ink);
+  font-size: 25rpx;
+  line-height: 1.4;
+  transition: all 0.15s ease;
+}
+
+.preset-item:active {
+  border-color: var(--cinnabar);
+}
+
+.preset-active {
+  background-color: var(--cinnabar-soft);
+  border-color: var(--cinnabar);
+  color: var(--cinnabar);
+  font-weight: 600;
+}
+
+.preset-doc {
+  margin-top: 6rpx;
+}
+
+.preset-name {
+  display: block;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ---- picker 与手输 ---- */
+.picker-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #F8F9FA;
+  border: 1rpx solid var(--line);
+  border-radius: 14rpx;
+  padding: 18rpx 22rpx;
+}
+
+.picker-empty {
+  color: var(--muted);
+}
+
+.picker-arrow {
+  width: 12rpx;
+  height: 12rpx;
+  border-right: 2.5rpx solid var(--muted);
+  border-bottom: 2.5rpx solid var(--muted);
+  transform: rotate(45deg);
+  margin-bottom: 4rpx;
+}
+
+.model-row {
+  margin-top: 8rpx;
+}
+
+.model-input {
+  margin-top: 12rpx;
+}
+
+.link {
+  color: var(--cinnabar);
+  font-size: 25rpx;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+/* ---- 视觉模型 ---- */
+.vision-foot {
+  margin-top: 10rpx;
+}
+
+/* ---- 测试连接 ---- */
+.test-btn {
+  margin-bottom: 0;
+  height: 80rpx;
+  font-size: 28rpx;
+  border-radius: 14rpx;
+}
+
+.test-box {
+  margin-top: 18rpx;
+  padding: 18rpx 22rpx;
+  border-radius: 14rpx;
+  border: 1rpx solid var(--line);
+  background-color: var(--card);
+}
+
+.test-ok {
+  border-color: var(--success);
+  background-color: var(--success-soft);
+}
+
+.test-fail {
+  border-color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
+.test-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6rpx;
+}
+
+.test-tag {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.test-msg {
+  font-size: 24rpx;
+  color: var(--sub);
+  line-height: 1.5;
+}
+
+.danger-btn {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ---- Skill 管理 ---- */
+.skill-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.skill-name {
+  font-size: 29rpx;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.skill-ver {
+  font-size: 23rpx;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.skill-summary {
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+
+.skill-source {
+  font-size: 23rpx;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.outline {
+  margin: 12rpx 0 18rpx;
+}
+
+.outline-item {
+  display: flex;
+  align-items: flex-start;
+  font-size: 25rpx;
+  color: var(--ink);
+  line-height: 1.6;
+  margin-bottom: 6rpx;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background-color: var(--cinnabar);
+  margin: 16rpx 14rpx 0 4rpx;
+}
+
+.features {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.feature {
+  font-size: 23rpx;
+  color: var(--sub);
+  line-height: 1.4;
+  padding: 6rpx 16rpx;
+  margin: 0 10rpx 10rpx 0;
+  border-radius: var(--radius-pill);
+  background-color: var(--line-light);
+  border: 1rpx solid transparent;
+}
+
+.switch-label {
+  margin-bottom: 0;
+}
+
+.skill-area {
+  width: 100%;
+  height: 240rpx;
+  margin-top: 10rpx;
+  font-size: 27rpx;
+}
+
+.half {
+  flex: 1;
+  margin-right: 0;
+  height: 80rpx;
+  font-size: 27rpx;
+}
+
+.half + .half {
+  margin-left: 16rpx;
+}
+
+.disclaimer {
+  display: block;
+  margin-top: 12rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+}

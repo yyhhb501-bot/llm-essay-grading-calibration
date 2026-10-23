@@ -1,0 +1,44 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const source = fs.readFileSync(path.join(__dirname, '../site/js/store.js'), 'utf8');
+const values = new Map([['slz_history', JSON.stringify([{ id: 'legacy', title: 'old unowned record' }])]]);
+const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+let user = { id: 'user-a', username: 'alice' };
+function documentStore(protocol = 'https:') {
+  const root = { localStorage: storage, Auth: { getUser: () => user, isAuthenticated: () => !!user } };
+  vm.runInNewContext(source, { window: root, location: { protocol } });
+  return root.Store;
+}
+let checks = 0;
+function check(name, actual, expected) { assert.equal(actual, expected, name); checks++; console.log('PASS ' + name); }
+const a = documentStore();
+check('cannot read account before document binds identity', a.getHistory().length, 0);
+a.bindUser(user.id);
+a.addHistory({ id: 'private-a', title: 'Alice history' });
+a.setConfig({ apiKey: 'fake-a-key', mode: 'selfkey' });
+a.setPlan({ content: 'Alice plan' });
+check('account A sees its own history', a.getHistory()[0].id, 'private-a');
+user = { id: 'user-b', username: 'bob' };
+check('old document cannot rebind to newly logged-in account', a.bindUser(user.id), false);
+check('old callbacks cannot read new user data', a.getHistory().length, 0);
+a.addHistory({ id: 'late-a-callback' });
+a.setConfig({ apiKey: 'late-key' });
+const b = documentStore(); b.bindUser(user.id);
+check('account B starts without A records', b.getHistory().length, 0);
+check('account B has no A API key', b.getConfig().apiKey, '');
+check('account B has no A plan', b.getPlan().content, '');
+b.addHistory({ id: 'private-b' });
+user = { id: 'user-a', username: 'alice' };
+const again = documentStore(); again.bindUser(user.id);
+check('A history is preserved after switching back', again.getHistory()[0].id, 'private-a');
+check('A key is preserved after switching back', again.getConfig().apiKey, 'fake-a-key');
+check('legacy history remains unassigned', JSON.parse(values.get('slz_history'))[0].id, 'legacy');
+user = null;
+check('logged-out website reads no prior user records', again.getHistory().length, 0);
+check('logged-out website reads no key', again.getConfig().apiKey, '');
+const offline = documentStore('file:');
+check('offline file retains original legacy store', offline.getHistory()[0].id, 'legacy');
+console.log(checks + ' account storage isolation checks passed.');

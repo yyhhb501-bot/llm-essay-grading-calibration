@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "skills": {
+    "shenlunseven": {
+      "name": "shenlunseven",
+      "version": "1.0.2",
+      "source": "redskill",
+      "install_dir": "E:\\Vscode\\申论批改app\\skills\\shenlunseven",
+      "installed_at": "1791015083451",
+      "sha256": "05f24260cb10b63cc9b3dc5a952944ee411adaf41fa5b6e7bd62560e06ba7e5a"
+    }
+  }
+}

@@ -151,8 +151,8 @@
 
   /** 校验配置，返回中文提示或空串 */
   function validateConfig(conf) {
+    if (!isLocalFile() && (!root.Auth || !root.Auth.isAuthenticated())) return '请先登录账号。';
     if (conf.mode === 'server') {
-      if (!conf.accessCode) return '还没有填写访问口令，请到设置页填写主人发给你的那串口令。';
       return '';
     }
     if (!conf.baseURL) return '还没有填写模型地址，请到设置页选择供应商或填写 baseURL。';
@@ -285,8 +285,19 @@
       return { url: url, headers: headers, isDirect: true };
     }
     var headersDefault = { 'Content-Type': 'application/json' };
-    if (conf.accessCode) headersDefault['X-Access-Code'] = conf.accessCode;
     return { url: CHAT_ENDPOINT, headers: headersDefault, isDirect: false };
+  }
+
+  function accountError(res, text) {
+    if (isLocalFile() || res.status !== 401) return false;
+    try {
+      var body = JSON.parse(text);
+      if (body.code === 'AUTH_REQUIRED' || body.code === 'SESSION_CHANGED') {
+        if (root.Auth) root.Auth.requireLogin('登录已过期，请重新登录。');
+        return true;
+      }
+    } catch (_) {}
+    return false; // A model provider's 401 is a model-key error, not a logged-out account.
   }
 
   // ---- 流式内核 ----
@@ -330,6 +341,7 @@
       if (fallbackTried || canceled) return; // 只降级一次；用户已中止就不再烧请求
       fallbackTried = true;
       nonStreamCall(conf, messages, params.model, function (text) {
+        if (canceled || settled) return;
         // 降级成功：一次性吐出全文，页面可撤下错误卡
         fullText = text;
         if (typeof handlers.onReplace === 'function') {
@@ -430,12 +442,14 @@
 
     root.fetch(ep.url, {
       method: 'POST',
+      credentials: ep.isDirect ? 'omit' : 'same-origin',
       headers: ep.headers,
       body: serializePayload(payload),
       signal: controller ? controller.signal : undefined
     }).then(function (res) {
       if (res.status !== 200) {
         return res.text().then(function (text) {
+          if (accountError(res, text)) { canceled = true; settled = true; return; }
           var serverMsg = pickServerMessage(text);
           // 转发层已经给的是中文（如「访问口令不正确」「密钥无效」），有原话就直接用
           fail(serverMsg && /[一-龥]/.test(serverMsg) ? serverMsg : describeHttp(res.status, serverMsg));
@@ -509,7 +523,6 @@
   /** 请求头：两种模式都要带访问口令 */
   function buildHeaders(conf) {
     var headers = { 'Content-Type': 'application/json' };
-    if (conf.accessCode) headers['X-Access-Code'] = conf.accessCode;
     return headers;
   }
 
@@ -521,6 +534,7 @@
    * @param {Object}  [extras]   额外写进请求体的字段（temperature / thinking / max_tokens 等）
    */
   function nonStreamCall(conf, messages, model, onSuccess, onFail, vision, extras) {
+    if (!isLocalFile() && (!root.Auth || !root.Auth.isAuthenticated())) { onFail('请先登录账号。'); return Promise.resolve(); }
     var describeHttp = vision ? describeVisionHttpError : describeHttpError;
     var ep = getEndpointInfo(conf, false, false);
     var payload;
@@ -540,11 +554,13 @@
     }
     return root.fetch(ep.url, {
       method: 'POST',
+      credentials: ep.isDirect ? 'omit' : 'same-origin',
       headers: ep.headers,
       body: serializePayload(payload)
     }).then(function (res) {
       return res.text().then(function (text) {
         if (res.status !== 200) {
+          if (accountError(res, text)) return;
           var serverMsg = pickServerMessage(text);
           onFail(serverMsg && /[一-龥]/.test(serverMsg) ? serverMsg : describeHttp(res.status, serverMsg));
           return;
@@ -711,11 +727,13 @@
 
       root.fetch(ep.url, {
         method: 'POST',
+        credentials: ep.isDirect ? 'omit' : 'same-origin',
         headers: ep.headers,
         body: serializePayload(payload)
       }).then(function (res) {
         return res.text().then(function (text) {
           if (res.status !== 200) {
+            if (accountError(res, text)) { finish(false, '登录已过期，请重新登录。'); return; }
             var serverMsg = pickServerMessage(text);
             finish(false, serverMsg && /[一-龥]/.test(serverMsg) ? serverMsg : describeHttpError(res.status, serverMsg));
             return;

@@ -22,6 +22,7 @@ var ROOT = path.resolve(__dirname, '..');
 var SITE_PORT = Number(process.env.SLZ_TEST_PORT || 8799);
 const ACCESS = 'test-access-code';
 const FAKE_API_KEY = 'fake-api-key-for-test';
+var sessionCookie = '';
 
 /** 极简断言器 */
 var passed = 0;
@@ -52,7 +53,8 @@ function request(port, method, urlPath, options) {
       port: port,
       method: method,
       path: urlPath,
-      headers: opts.headers || {}
+      headers: Object.assign({}, method === 'POST' ? { Origin: 'http://127.0.0.1:' + port } : {},
+        sessionCookie && !opts.noAuth ? { Cookie: sessionCookie } : {}, opts.headers || {})
     }, function (res) {
       var chunks = [];
       res.on('data', function (c) {
@@ -136,6 +138,9 @@ async function main() {
     PORT: String(SITE_PORT),
     HOST: '127.0.0.1',
     ACCESS_CODE: ACCESS,
+    REGISTER_INVITE_CODE: ACCESS,
+    SLZ_AUTH_DB_FILE: path.join(require('os').tmpdir(), 'slz-test-accounts-' + process.pid + '.sqlite'),
+    TRUST_PROXY: '0',
     ZHIPU_API_KEY: FAKE_API_KEY,
     ZHIPU_BASE_URL: 'http://127.0.0.1:' + upstreamPort + '/v1'
   });
@@ -214,14 +219,21 @@ async function main() {
     noCodeJson = JSON.parse(noCode.body);
   } catch (e) { /* 保持 null */ }
   check(
-    'POST /api/chat 无口令返回 401 JSON',
+    'POST /api/chat 未登录返回 401 JSON',
     noCode.status === 401 && !!noCodeJson && typeof noCodeJson.error === 'string' &&
-      noCodeJson.error.indexOf('口令') !== -1,
+      noCodeJson.error.indexOf('登录') !== -1,
     'status=' + noCode.status + ' body=' + noCode.body,
     'status=' + noCode.status + ' error=' + (noCodeJson && noCodeJson.error)
   );
 
-  // ---- 3.4 带口令 + 假上游 → 中文错误 ----
+  var registration = await request(SITE_PORT, 'POST', '/api/auth/register', {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'site-test-user', password: 'site-test-password', inviteCode: ACCESS })
+  });
+  check('邀请注册并获取真实会话 Cookie', registration.status === 201 && !!registration.headers['set-cookie'], 'status=' + registration.status);
+  sessionCookie = ((registration.headers['set-cookie'] || [])[0] || '').split(';')[0];
+
+  // ---- 3.4 登录 + 假上游 → 中文错误 ----
   var withCode = await request(SITE_PORT, 'POST', '/api/chat', {
     headers: {
       'Content-Type': 'application/json',
@@ -239,7 +251,7 @@ async function main() {
   } catch (e) { /* 保持 null */ }
   var errorText = withCodeJson && withCodeJson.error ? String(withCodeJson.error) : '';
   check(
-    '带口令 + 假上游时拿到中文错误（上游 401 → 密钥无效）',
+    '已登录 + 假上游时拿到中文错误（上游 401 → 密钥无效）',
     withCode.status === 401 && errorText.indexOf('密钥') !== -1 && errorText.indexOf('Invalid API key') !== -1,
     'status=' + withCode.status + ' body=' + withCode.body,
     'error=' + errorText
@@ -320,10 +332,11 @@ async function main() {
   var acceptedInfo = JSON.parse(acceptedAdmin.body);
   check('本机可配置官方模型且响应不返回密钥', acceptedAdmin.status === 200 && acceptedInfo.model === 'glm-5.3-flash' && !acceptedInfo.apiKey, 'status=' + acceptedAdmin.status);
   var sharedUnauthorized = await request(SITE_PORT, 'POST', '/api/chat', {
+    noAuth: true,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages: [{ role: 'user', content: 'test' }] })
   });
-  check('共享模式拒绝无口令请求', sharedUnauthorized.status === 401, 'status=' + sharedUnauthorized.status);
+  check('共享模式拒绝未登录请求', sharedUnauthorized.status === 401, 'status=' + sharedUnauthorized.status);
   var privateFile = await request(SITE_PORT, 'GET', '/.runtime/shared-model.json');
   check('密钥配置不通过静态网站提供', privateFile.status === 404, 'status=' + privateFile.status);
   require('fs').unlinkSync(childEnv.SLZ_SHARED_CONFIG_FILE);

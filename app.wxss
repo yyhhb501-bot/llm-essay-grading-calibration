@@ -1,0 +1,494 @@
+/**
+ * app.wxss —— 作文批改大人（微信小程序全局设计系统）
+ *
+ * 视觉规范基线（严格对齐 docs/Antigravity-微信小程序UI设计交接.md §3）：
+ *   --paper #F6F7F9（纯净浅灰白底）/ --card #FFFFFF（纯白微阴影卡片）
+ *   --ink #1D2129（高清晰墨黑正文）/ --sub #4E5969（优雅副文本）
+ *   --muted #86909C（弱提示、占位符）/ --line #E5E6EB（微细边框）
+ *   --cinnabar #FF6B35（品牌主色，活力珊瑚橙）/ --cinnabar-deep #E85520（激活按压）
+ *   --cinnabar-soft #FFF2E8（柔和浅橙底）/ --gold #FF7D00（提分高亮金橙）
+ *
+ * 移动端体验：统一无衬线字体体系、Retina 高对比度排版、舒适触控目标（>=44px）。
+ */
+
+page {
+  /* ---- 核心设计 Token ---- */
+  --paper: #F6F7F9;          /* 页面背景：浅灰白，护眼纯净 */
+  --card: #FFFFFF;           /* 卡片背景：纯白 */
+  --ink: #1D2129;            /* 主文字：深曜石黑，Retina 锐利清晰 */
+  --ink-sub: #374151;        /* 次级正文 */
+  --sub: #4E5969;            /* 辅助文字、次要标签 */
+  --muted: #86909C;          /* 弱提示、占位符文字 */
+  --line: #E5E6EB;           /* 分割线与微线边框 */
+  --line-light: #F2F3F5;     /* 浅灰底 */
+
+  /* 品牌色：活力珊瑚橙（克制使用，高对比重点凸显） */
+  --cinnabar: #FF6B35;       /* 主品牌色 */
+  --cinnabar-deep: #E85520;  /* 激活按压态 */
+  --cinnabar-soft: #FFF2E8;  /* 空气感浅橙底 */
+  --cinnabar-border: rgba(255, 107, 53, 0.25);
+
+  /* 辅助状态色 */
+  --gold: #FF7D00;           /* 提分高亮金橙 */
+  --gold-soft: #FFF7E8;      /* 柔和金橙底 */
+  --success: #059669;        /* 翡翠绿 */
+  --success-soft: #ECFDF5;
+  --danger: #DC2626;         /* 警示红 */
+  --danger-soft: #FEF2F2;
+
+  /* 圆角与阴影 */
+  --radius: 20rpx;           /* 卡片标准圆角 */
+  --radius-sm: 12rpx;        /* 按钮与控件圆角 */
+  --radius-pill: 999rpx;
+  --shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  --shadow-strong: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+
+  background-color: var(--paper);
+  color: var(--ink);
+  font-size: 29rpx;
+  line-height: 1.7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  box-sizing: border-box;
+}
+
+view, text, button, input, textarea, scroll-view {
+  box-sizing: border-box;
+}
+
+/* ---------------- 页面容器与间距 ---------------- */
+
+.page {
+  padding: 24rpx 28rpx 60rpx;
+  max-width: 100%;
+}
+
+/* ---------------- 内容卡片 ---------------- */
+
+.card {
+  background-color: var(--card);
+  border: 1rpx solid rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  position: relative;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  font-size: 31rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 16rpx;
+  letter-spacing: -0.2rpx;
+}
+
+.card-title::before {
+  content: "";
+  display: inline-block;
+  width: 6rpx;
+  height: 26rpx;
+  background-color: var(--cinnabar);
+  border-radius: 3rpx;
+  margin-right: 14rpx;
+}
+
+.card-title.no-margin {
+  margin-bottom: 0;
+}
+
+/* ---------------- 按钮体系 ---------------- */
+
+.btn-primary,
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 90rpx;
+  padding: 0 32rpx;
+  border-radius: 16rpx;
+  font-size: 31rpx;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0 0 20rpx;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #FF7842 0%, #FF5A1F 100%);
+  color: #FFFFFF;
+  border: none;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 53, 0.28);
+}
+
+.btn-primary::after,
+.btn-ghost::after {
+  border: none;
+}
+
+.btn-primary:active {
+  background: var(--cinnabar-deep);
+  transform: scale(0.99);
+}
+
+.btn-primary[disabled],
+button.btn-primary[disabled] {
+  background: #E5E7EB !important;
+  border-color: #E5E7EB !important;
+  color: #9CA3AF !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--cinnabar);
+  border: 1.5rpx solid var(--cinnabar);
+}
+
+.btn-ghost:active {
+  background-color: var(--cinnabar-soft);
+}
+
+.btn-ghost[disabled],
+button.btn-ghost[disabled] {
+  color: #9CA3AF !important;
+  border-color: #E5E7EB !important;
+  opacity: 1 !important;
+}
+
+/* ---------------- 表单输入与控件 ---------------- */
+
+.input-box {
+  background-color: #F8F9FA;
+  border: 1rpx solid var(--line);
+  border-radius: 14rpx;
+  padding: 18rpx 22rpx;
+  color: var(--ink);
+  font-size: 29rpx;
+  line-height: 1.7;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.input-box:focus {
+  background-color: #FFFFFF;
+  border-color: var(--cinnabar);
+}
+
+.field {
+  margin-bottom: 22rpx;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 12rpx;
+}
+
+.field-hint {
+  display: block;
+  font-size: 23rpx;
+  color: var(--muted);
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+.field-hint.danger {
+  color: var(--danger);
+}
+
+/* 必填与选填徽章 */
+.tag-badge {
+  font-size: 20rpx;
+  font-weight: normal;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  line-height: 1.2;
+}
+
+.tag-required {
+  color: var(--cinnabar);
+  background-color: var(--cinnabar-soft);
+}
+
+.tag-optional {
+  color: var(--muted);
+  background-color: var(--line-light);
+}
+
+/* ---------------- 引用与提示块 ---------------- */
+
+.quote-red {
+  border-left: 5rpx solid var(--cinnabar);
+  background-color: var(--cinnabar-soft);
+  color: var(--cinnabar-deep);
+  padding: 16rpx 20rpx;
+  border-radius: 0 12rpx 12rpx 0;
+  font-size: 27rpx;
+  line-height: 1.7;
+  margin: 16rpx 0;
+}
+
+.quote-plain {
+  border-left: 5rpx solid var(--line);
+  color: var(--sub);
+  padding: 12rpx 20rpx;
+  margin: 16rpx 0;
+  font-size: 27rpx;
+  line-height: 1.7;
+}
+
+/* ---------------- 分数展示体系 ---------------- */
+
+.score-num {
+  font-family: -apple-system, "DIN Alternate", "Roboto", sans-serif;
+  font-size: 92rpx;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--cinnabar);
+}
+
+.score-max {
+  font-size: 27rpx;
+  color: var(--sub);
+  margin-left: 8rpx;
+}
+
+.grade-badge {
+  display: inline-block;
+  padding: 6rpx 18rpx;
+  border-radius: var(--radius-pill);
+  background-color: var(--gold-soft);
+  color: var(--gold);
+  border: 1rpx solid var(--gold);
+  font-size: 23rpx;
+  font-weight: 600;
+}
+
+.bar-track {
+  height: 12rpx;
+  border-radius: 6rpx;
+  background-color: var(--line-light);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 12rpx;
+  border-radius: 6rpx;
+  background-color: var(--cinnabar);
+  transition: width 0.3s ease;
+}
+
+.bar-fill-gold {
+  background-color: var(--gold);
+}
+
+/* ---------------- 快捷胶囊 ---------------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10rpx 22rpx;
+  margin: 0 14rpx 14rpx 0;
+  border-radius: var(--radius-pill);
+  background-color: var(--line-light);
+  border: 1rpx solid transparent;
+  color: var(--sub);
+  font-size: 25rpx;
+  line-height: 1.3;
+  transition: all 0.15s ease;
+}
+
+.chip:active,
+.chip-active {
+  background-color: var(--cinnabar-soft);
+  border-color: var(--cinnabar-border);
+  color: var(--cinnabar);
+  font-weight: 600;
+}
+
+/* ---------------- 布局辅助类 ---------------- */
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 25rpx;
+}
+
+.danger {
+  color: var(--danger);
+}
+
+.gold {
+  color: var(--gold);
+}
+
+.divider {
+  height: 1rpx;
+  background-color: var(--line);
+  margin: 20rpx 0;
+}
+
+.empty {
+  padding: 80rpx 40rpx;
+  text-align: center;
+  color: var(--sub);
+  font-size: 28rpx;
+}
+
+.safe-bottom {
+  height: calc(44rpx + env(safe-area-inset-bottom));
+}
+
+/* ---------------- 印章与徽章 ---------------- */
+
+.stamp-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid var(--cinnabar);
+  color: var(--cinnabar);
+  font-size: 21rpx;
+  font-weight: 600;
+  padding: 3rpx 12rpx;
+  border-radius: 6rpx;
+  letter-spacing: 1rpx;
+  background-color: var(--cinnabar-soft);
+}
+
+.stamp-gold {
+  border-color: var(--gold);
+  color: var(--gold);
+  background-color: var(--gold-soft);
+}
+
+/* ---------------- 固定底栏 ---------------- */
+
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid var(--line);
+  padding: 16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom));
+  z-index: 100;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+/* ---------------- Markdown 结构化排版 ---------------- */
+
+.md-h2 {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 30rpx 0 14rpx;
+  padding-left: 14rpx;
+  border-left: 5rpx solid var(--cinnabar);
+  line-height: 1.5;
+}
+
+.md-h3 {
+  font-size: 29rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 22rpx 0 10rpx;
+}
+
+.md-p {
+  font-size: 29rpx;
+  color: var(--ink);
+  margin: 10rpx 0;
+  line-height: 1.8;
+}
+
+.md-bold,
+.bold,
+.seg-bold {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.md-quote {
+  border-left: 5rpx solid var(--cinnabar);
+  background-color: var(--cinnabar-soft);
+  color: var(--cinnabar-deep);
+  padding: 16rpx 20rpx;
+  border-radius: 0 10rpx 10rpx 0;
+  font-size: 27rpx;
+  line-height: 1.8;
+  margin: 14rpx 0;
+}
+
+.md-li {
+  font-size: 29rpx;
+  color: var(--ink);
+  margin: 8rpx 0;
+  padding-left: 28rpx;
+  line-height: 1.8;
+  position: relative;
+}
+
+.md-li::before {
+  content: "";
+  position: absolute;
+  left: 6rpx;
+  top: 20rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background-color: var(--cinnabar);
+}
+
+.md-oli {
+  font-size: 29rpx;
+  color: var(--ink);
+  margin: 8rpx 0;
+  padding-left: 40rpx;
+  line-height: 1.8;
+  position: relative;
+}
+
+.md-oli-num {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 700;
+  color: var(--cinnabar);
+  font-size: 27rpx;
+}
+
+.md-hr {
+  height: 1rpx;
+  background-color: var(--line);
+  margin: 24rpx 0;
+}

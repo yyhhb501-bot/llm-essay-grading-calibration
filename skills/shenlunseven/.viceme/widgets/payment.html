@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>微信支付</title>
+  <style>
+    html,body{margin:0;height:100%;background:transparent;color:#1a1a1a;font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+    .viceme-payment{min-height:100%;min-height:100vh;display:grid;place-items:center;box-sizing:border-box;padding:16px}
+    .viceme-payment *{box-sizing:border-box}
+    .viceme-payment [hidden]{display:none!important}
+    .viceme-payment .sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+    .viceme-payment .wx-shell{width:100%;max-width:360px;margin:0}
+    .viceme-payment .wx-poster{border-radius:12px;overflow:hidden;box-shadow:0 10px 28px rgba(15,80,90,.12)}
+    .viceme-payment .wx-hero{background:#07c160;color:#fff;padding:28px 24px 24px;text-align:center}
+    .viceme-payment .wx-brand{display:flex;align-items:center;justify-content:center;gap:8px;margin:0;font-size:20px;font-weight:700;letter-spacing:.04em}
+    .viceme-payment .wx-mark{width:28px;height:25px;flex:0 0 28px}
+    .viceme-payment .wx-hint{margin:8px 0 0;color:rgba(255,255,255,.88);font-size:13px;font-weight:400}
+    .viceme-payment .pay-header{display:none}
+    .viceme-payment .amount{margin:18px 0 0;color:#fff;font-size:36px;font-weight:600;line-height:1.15;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+    .viceme-payment .validity{margin:10px 0 0;color:rgba(255,255,255,.9);font-size:13px}
+    .viceme-payment .countdown{margin-left:4px;font-variant-numeric:tabular-nums;font-weight:600}
+    .viceme-payment .qr{margin:22px 0 0}
+    .viceme-payment .qr-surface{display:grid;width:210px;max-width:100%;aspect-ratio:1;margin:0 auto;padding:0;background:#fff;border-radius:0;overflow:hidden}
+    .viceme-payment .qr-surface > *{grid-area:1/1;min-width:0;min-height:0}
+    .viceme-payment .qr svg{display:block;width:100%;height:100%}
+    .viceme-payment .qr-placeholder{height:100%;min-height:188px;display:grid;place-items:center;padding:16px;color:#888;background:#f7f7f7;border-radius:2px}
+    .viceme-payment .payment-title{margin:14px 0 0;color:#fff;font-size:15px;font-weight:500;overflow-wrap:anywhere}
+    .viceme-payment figcaption{margin:8px 0 0;color:rgba(255,255,255,.9);font-size:13px}
+    .viceme-payment .scan-sub{margin:0}
+    .viceme-payment figcaption:empty,.viceme-payment .scan-sub:empty{display:none}
+    .viceme-payment .wx-foot{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px 12px 18px;background:#fff;color:#1a1a1a;font-size:15px;font-weight:500}
+    .viceme-payment .wx-check{width:22px;height:20px;flex:0 0 22px}
+    .viceme-payment .payment-result{padding:36px 24px;background:#fff;border:1px solid #dceee3;border-radius:12px;text-align:center;box-shadow:0 10px 28px rgba(15,80,90,.08)}
+    .viceme-payment .result-mark{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 20px;border-radius:50%;background:#e7f7ed;color:#138744;font-size:28px}
+    .viceme-payment .result-title{margin:0;color:#166534;font-size:22px;line-height:1.45;overflow-wrap:anywhere}
+    .viceme-payment .result-description{margin:12px 0 0;color:#475569;font-size:15px;overflow-wrap:anywhere}
+    .viceme-payment[data-phase="expired"] .wx-hero,.viceme-payment[data-phase="unavailable"] .wx-hero,.viceme-payment[data-phase="PAID"] .wx-hero,.viceme-payment[data-phase="CLOSED"] .wx-hero{background:#8a8a8a}
+    .viceme-payment[data-phase="expired"] .validity,.viceme-payment[data-phase="unavailable"] .validity,.viceme-payment[data-phase="PAID"] .validity,.viceme-payment[data-phase="CLOSED"] .validity,.viceme-payment[data-phase="CANCELLED"] .validity,.viceme-payment[data-phase="FAILED"] .validity,.viceme-payment[data-phase="REFUNDED"] .validity{visibility:hidden}
+    @media(max-width:480px){.viceme-payment{padding:12px}.viceme-payment .wx-hero{padding:24px 18px 20px}.viceme-payment .amount{font-size:32px}}
+  </style>
+</head>
+<body>
+<section class="viceme-payment" aria-label="支付订单" data-phase="pending">
+  <h2 class="sr-only" data-field="summary">订单金额、支付方式、支付二维码和有效期</h2>
+  <div class="wx-shell">
+    <div class="wx-poster" data-field="cashier">
+      <div class="wx-hero">
+        <p class="wx-brand">
+          <!-- 微信支付标准Logo https://cdn-40038.sh.gfp.tencent-cloud.com/wxpayface/imgs/logo.svg -->
+          <svg class="wx-mark" viewBox="0 0 98 87" aria-hidden="true">
+            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+              <g transform="translate(-316.000000, -1464.000000)" fill="#FFFFFF">
+                <g transform="translate(155.000000, 998.000000)">
+                  <g transform="translate(161.000000, 461.000000)">
+                    <g transform="translate(0.000000, 5.068966)">
+                      <path d="M35.5364897,54.5346345 C35.0954897,54.7559793 34.598731,54.8860828 34.0715586,54.8860828 C32.8499379,54.8860828 31.7871448,54.2136 31.2295586,53.2200828 L31.0166621,52.7537379 L22.1223172,33.2348414 C22.0260069,33.0219448 21.9651793,32.7820138 21.9651793,32.5471517 C21.9651793,31.6499448 22.6951103,30.9200138 23.5940069,30.9200138 C23.9606621,30.9200138 24.2969034,31.041669 24.5689379,31.2444276 L35.0650759,38.7160828 C35.8304897,39.2179103 36.7479724,39.5119103 37.734731,39.5119103 C38.3210414,39.5119103 38.8820069,39.4037724 39.4041103,39.2128414 L88.7623172,17.2456345 C79.9169724,6.8153931 65.3436966,0.0010137931 48.8543517,0.0010137931 C21.8705586,0.0010137931 -0.000337931034,18.2290138 -0.000337931034,40.7149448 C-0.000337931034,52.983531 6.57917931,64.0271172 16.8793172,71.4920138 C17.7072483,72.0800138 18.2462483,73.0498759 18.2462483,74.1447724 C18.2462483,74.5063586 18.1719034,74.8358414 18.0755931,75.180531 C17.252731,78.2506345 15.9364897,83.1641517 15.8756621,83.3956345 C15.7725931,83.7791862 15.6120759,84.1813241 15.6120759,84.5851517 C15.6120759,85.4840483 16.3403172,86.2122897 17.2409034,86.2122897 C17.5940414,86.2122897 17.8829724,86.0804966 18.1820414,85.9098414 L28.8792483,79.7341517 C29.6818345,79.2711862 30.5334207,78.9839448 31.4711793,78.9839448 C31.9713172,78.9839448 32.4545586,79.0599793 32.9073862,79.198531 C37.8969379,80.6330483 43.281869,81.4305655 48.8543517,81.4305655 C75.8381448,81.4305655 97.7124207,63.2025655 97.7124207,40.7149448 C97.7124207,33.9056345 95.6949724,27.4917034 92.1466966,21.8499448 L35.8930069,54.3268069 L35.5364897,54.5346345 Z"></path>
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </svg>
+          <span data-field="hero">推荐使用微信支付</span>
+        </p>
+        <p class="wx-hint" data-field="hint">请使用微信扫一扫</p>
+        <header class="pay-header"></header>
+        <p class="amount" data-field="amount" hidden></p>
+        <p class="validity"><span data-field="validity-label">有效期</span><span class="countdown" data-field="countdown" role="timer" aria-live="off">--:--</span></p>
+        <figure class="qr">
+          <div class="qr-surface">
+            <div data-field="qr" hidden>__QR_SVG__</div>
+            <div class="qr-placeholder" data-field="placeholder">正在确认有效期</div>
+          </div>
+          <p class="payment-title" data-field="title"></p>
+          <figcaption data-field="caption"></figcaption>
+          <p class="scan-sub" data-field="scan-sub"></p>
+        </figure>
+      </div>
+      <div class="wx-foot">
+        <svg class="wx-check" viewBox="0 0 98 87" aria-hidden="true">
+          <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+            <g transform="translate(-316.000000, -1464.000000)" fill="#07C160">
+              <g transform="translate(155.000000, 998.000000)">
+                <g transform="translate(161.000000, 461.000000)">
+                  <g transform="translate(0.000000, 5.068966)">
+                    <path d="M35.5364897,54.5346345 C35.0954897,54.7559793 34.598731,54.8860828 34.0715586,54.8860828 C32.8499379,54.8860828 31.7871448,54.2136 31.2295586,53.2200828 L31.0166621,52.7537379 L22.1223172,33.2348414 C22.0260069,33.0219448 21.9651793,32.7820138 21.9651793,32.5471517 C21.9651793,31.6499448 22.6951103,30.9200138 23.5940069,30.9200138 C23.9606621,30.9200138 24.2969034,31.041669 24.5689379,31.2444276 L35.0650759,38.7160828 C35.8304897,39.2179103 36.7479724,39.5119103 37.734731,39.5119103 C38.3210414,39.5119103 38.8820069,39.4037724 39.4041103,39.2128414 L88.7623172,17.2456345 C79.9169724,6.8153931 65.3436966,0.0010137931 48.8543517,0.0010137931 C21.8705586,0.0010137931 -0.000337931034,18.2290138 -0.000337931034,40.7149448 C-0.000337931034,52.983531 6.57917931,64.0271172 16.8793172,71.4920138 C17.7072483,72.0800138 18.2462483,73.0498759 18.2462483,74.1447724 C18.2462483,74.5063586 18.1719034,74.8358414 18.0755931,75.180531 C17.252731,78.2506345 15.9364897,83.1641517 15.8756621,83.3956345 C15.7725931,83.7791862 15.6120759,84.1813241 15.6120759,84.5851517 C15.6120759,85.4840483 16.3403172,86.2122897 17.2409034,86.2122897 C17.5940414,86.2122897 17.8829724,86.0804966 18.1820414,85.9098414 L28.8792483,79.7341517 C29.6818345,79.2711862 30.5334207,78.9839448 31.4711793,78.9839448 C31.9713172,78.9839448 32.4545586,79.0599793 32.9073862,79.198531 C37.8969379,80.6330483 43.281869,81.4305655 48.8543517,81.4305655 C75.8381448,81.4305655 97.7124207,63.2025655 97.7124207,40.7149448 C97.7124207,33.9056345 95.6949724,27.4917034 92.1466966,21.8499448 L35.8930069,54.3268069 L35.5364897,54.5346345 Z"></path>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+        </svg>
+        <span data-field="method">微信支付</span>
+      </div>
+    </div>
+    <div class="payment-result" data-field="result" hidden>
+      <div class="result-mark" aria-hidden="true">✓</div>
+      <h2 class="result-title" data-field="result-title"></h2>
+      <p class="result-description" data-field="result-description"></p>
+    </div>
+    <div class="pay-state sr-only"><span data-field="state" role="status" aria-live="polite"></span></div>
+  </div>
+</section>
+<script>
+(() => {
+  const data = __WIDGET_DATA__;
+  const root = document.querySelector('.viceme-payment:not([data-viceme-initialized])');
+  if (!root) return;
+  root.setAttribute("data-viceme-initialized", "true");
+  const dom = root.ownerDocument;
+  const view = dom.defaultView;
+  const field = name => root.querySelector('[data-field="' + name + '"]');
+  const en = data.locale === "en-US";
+  const labels = en ? {
+    pending:"Waiting for payment", expired:"QR code expired", unavailable:"Payment unavailable",
+    PAID:"Payment confirmed", CLOSED:"Order closed", CANCELLED:"Order cancelled", FAILED:"Payment failed", REFUNDED:"Payment refunded",
+    hero:"Pay with WeChat", hint:"Scan the QR code in WeChat", refresh:"Request a new payment QR code", validity:"Valid for"
+  } : {
+    pending:"等待支付", expired:"二维码已过期", unavailable:"支付信息不可用",
+    PAID:"支付成功", CLOSED:"订单已关闭", CANCELLED:"订单已取消", FAILED:"支付失败", REFUNDED:"已退款",
+    hero:"推荐使用微信支付", hint:"请使用微信扫一扫", refresh:"请重新获取支付二维码", validity:"有效期"
+  };
+  field("hero").textContent = labels.hero;
+  field("hint").textContent = labels.hint;
+  field("title").textContent = data.title;
+  field("method").textContent = data.paymentMethodLabel;
+  field("validity-label").textContent = labels.validity;
+  const amount = field("amount");
+  if (Number.isSafeInteger(data.amountCents) && data.amountCents >= 0 && ["CNY","USD"].includes(data.currency)) {
+    amount.textContent = new Intl.NumberFormat(en ? "en-US" : "zh-CN", {style:"currency",currency:data.currency}).format(data.amountCents / 100);
+    amount.hidden = false;
+  }
+  const expires = Date.parse(data.expiresAt);
+  let timer = null;
+  let expired = false;
+  function cleanup() {
+    if (timer !== null) clearInterval(timer);
+    timer = null;
+    dom.removeEventListener("visibilitychange", update);
+    view.removeEventListener("pageshow", update);
+  }
+  function phase(next, message) {
+    root.dataset.phase = next;
+    field("qr").hidden = next !== "active";
+    field("placeholder").hidden = next === "active";
+    field("placeholder").textContent = message;
+    field("state").textContent = message;
+    field("caption").textContent = next === "expired" ? labels.refresh : "";
+    field("scan-sub").textContent = "";
+  }
+  function update() {
+    if (!root.isConnected) { cleanup(); return false; }
+    // Only the caller's authoritative order status can confirm payment.
+    if (data.status !== "PENDING") {
+      phase(data.status, labels[data.status] || labels.unavailable);
+      if (data.status === "PAID" && typeof data.resultTitle === "string" && data.resultTitle.trim() && typeof data.resultDescription === "string" && data.resultDescription.trim()) {
+        dom.title = data.resultTitle;
+        root.setAttribute("aria-label", data.resultTitle);
+        field("summary").hidden = true;
+        field("cashier").hidden = true;
+        field("result").hidden = false;
+        field("result-title").textContent = data.resultTitle;
+        field("result-description").textContent = data.resultDescription;
+        field("state").textContent = data.resultTitle + ". " + data.resultDescription;
+      }
+      field("countdown").textContent = "--:--";
+      cleanup(); return false;
+    }
+    if (!Number.isFinite(expires)) {
+      phase("unavailable", labels.unavailable); cleanup(); return false;
+    }
+    const seconds = Math.max(0, Math.ceil((expires - Date.now()) / 1000));
+    expired = expired || seconds === 0;
+    field("countdown").textContent = expired ? "00:00" : String(Math.floor(seconds/60)).padStart(2,"0") + ":" + String(seconds%60).padStart(2,"0");
+    if (expired) { phase("expired", labels.expired); cleanup(); return false; }
+    if (!field("qr").querySelector("svg")) {
+      phase("unavailable", labels.unavailable); cleanup(); return false;
+    }
+    phase("active", labels.pending);
+    return true;
+  }
+  if (update()) {
+    timer = setInterval(update, 1000);
+    dom.addEventListener("visibilitychange", update);
+    view.addEventListener("pageshow", update);
+  }
+})();
+</script>
+</body>
+</html>

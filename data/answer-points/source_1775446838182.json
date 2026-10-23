@@ -1,0 +1,56 @@
+{
+ "paperId": "source_1775446838182",
+ "title": "2026年浙江省公考《申论》题（B卷）（网友回忆版）",
+ "year": 2026,
+ "region": "浙江",
+ "extractedAt": "2026-10-11T10:42:27.945Z",
+ "done": true,
+ "note": [],
+ "questions": [
+  {
+   "no": "一",
+   "stem": "概括举措",
+   "score": null,
+   "type": "归纳概括",
+   "materialRange": null,
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2026年浙江省考申论题（B卷）",
+    "url": "https://zhuanlan.zhihu.com/p/2046349864620111851",
+    "batchFile": "zhihu-s7-zhejiang.json",
+    "author": ""
+   }
+  },
+  {
+   "no": "二",
+   "stem": "以街道卫生服务中心名义发布公开信",
+   "score": null,
+   "type": "公文写作",
+   "materialRange": null,
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2026年浙江省考申论题（B卷）",
+    "url": "https://zhuanlan.zhihu.com/p/2046349864620111851",
+    "batchFile": "zhihu-s7-zhejiang.json",
+    "author": ""
+   }
+  },
+  {
+   "no": "三",
+   "stem": "从「小切口」和「大健康」的辩证关系来立意",
+   "score": null,
+   "type": "文章写作",
+   "materialRange": null,
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2026年浙江省考申论题（B卷）",
+    "url": "https://zhuanlan.zhihu.com/p/2046349864620111851",
+    "batchFile": "zhihu-s7-zhejiang.json",
+    "author": ""
+   }
+  }
+ ]
+}

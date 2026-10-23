@@ -407,7 +407,7 @@
     papers: '三套真题，套题到题两级展开',
     study: '先问基础、时间、目标，再排计划',
     history: '批改与对话记录都存在这台设备的浏览器里',
-    settings: '服务端模式只填口令，自带 Key 模式自己掌握密钥'
+    settings: '账号登录后使用共享模型，也可以配置自己的模型密钥'
   };
 
   function handleRoute() {
@@ -463,10 +463,10 @@
     if (!tip) return;
     tip.textContent = ok
       ? (cfg.mode === 'server'
-        ? '当前是服务端模式：模型走主人配置的密钥，你只需要访问口令。'
+        ? '已登录：使用站主提供的共享模型，无需填写 API Key。'
         : '当前是自带 Key 模式：请求会带上你自己填的密钥转发给模型厂商。')
       : (cfg.mode === 'server'
-        ? '还没有填访问口令，请先到设置页填一次。'
+        ? '请先登录账号。'
         : '还没有填齐 baseURL / API Key / 模型名，请先到设置页填写。');
     tip.className = ok ? 'field-hint' : 'field-hint danger';
   }
@@ -1042,6 +1042,8 @@
     $('result-upgrade-card').hidden = true;
     $('result-paper-card').hidden = true;
     $('result-score-card').hidden = true;
+    var calibRow = $('result-calibration-row');
+    if (calibRow) calibRow.hidden = true;
   }
 
   /** 把一条历史记录渲染进结果页（与小程序版 result.js 的 applyItem 同构） */
@@ -1068,6 +1070,32 @@
       $('result-grade').hidden = true;
     }
     $('result-dims').innerHTML = renderDims(view.dimensions);
+
+    var calibRow = $('result-calibration-row');
+    if (calibRow) {
+      if (view.hasScore && root.ScoreCalibrator) {
+        var dimMap = {};
+        for (var di = 0; di < (view.dimensions || []).length; di++) {
+          dimMap[view.dimensions[di].name] = Number(view.dimensions[di].scoreText) || 0;
+        }
+        var calibRes = root.ScoreCalibrator.calibrateScore({
+          raw_total: Number(view.totalText) || 70,
+          dimensions: dimMap,
+          question_type: payload.questionType || '归纳概括',
+          word_count: payload.answer ? countWords(payload.answer) : 400
+        });
+        if (calibRes) {
+          calibRow.hidden = false;
+          $('result-calibrated-score').textContent = calibRes.calibrated_score + ' 分';
+          var badgeEl = $('result-consistency-badge');
+          if (badgeEl) badgeEl.textContent = calibRes.reliability.badge;
+        } else {
+          calibRow.hidden = true;
+        }
+      } else {
+        calibRow.hidden = true;
+      }
+    }
 
     $('result-meta').textContent = (payload.questionType ? payload.questionType + ' · ' : '') + formatTime(item.time);
     if (streaming) {
@@ -1379,7 +1407,7 @@
     var tip = $('chat-mode-tip');
     if (tip) {
       tip.textContent = cfg.mode === 'server'
-        ? '服务端模式：只用你的访问口令'
+        ? '共享模型：已通过账号登录'
         : '自带 Key：' + (cfg.model || '未选模型');
     }
   }
@@ -1844,13 +1872,43 @@
     return nA && nB ? hit / Math.min(nA, nB) : 0;
   }
 
+  /** 全量卷子包：单文件 gzip，浏览器解压后按 id 取用（部署体积小、请求少） */
+  var __papersBundlePromise = null;
+  function loadPapersBundle() {
+    if (root.__papersBundle) return Promise.resolve(root.__papersBundle);
+    if (__papersBundlePromise) return __papersBundlePromise;
+    __papersBundlePromise = root.fetch('js/vendor/papers-bundle.json.gz')
+      .then(function(res) {
+        if (!res.ok) throw new Error('bundle http ' + res.status);
+        if (typeof DecompressionStream === 'undefined') throw new Error('no DecompressionStream');
+        var ds = new DecompressionStream('gzip');
+        var stream = res.body.pipeThrough(ds);
+        return new Response(stream).text();
+      })
+      .then(function(text) {
+        root.__papersBundle = JSON.parse(text);
+        return root.__papersBundle;
+      })
+      .catch(function(e) {
+        __papersBundlePromise = null;
+        throw e;
+      });
+    return __papersBundlePromise;
+  }
+
   /** 把真题题干+对应材料+非官方参考答案预填进批改表单 */
   function prefillFromPaperQuestion(paperId, questionIndex) {
     var meta = (root.PapersFullIndex || {})[paperId];
     if (!meta || !meta.qs || !meta.qs[questionIndex]) { toast('没有这道题'); return; }
     var q = meta.qs[questionIndex];
+    var docPromise = loadPapersBundle()
+      .then(function(bundle) { return bundle[paperId] || null; })
+      .catch(function() {
+        // 回退：逐卷文件（本地开发环境仍可用）
+        return root.fetch('js/vendor/papers/' + paperId + '.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+      });
     Promise.all([
-      root.fetch('js/vendor/papers/' + paperId + '.json').then(function(r){ return r.ok ? r.json() : null; }),
+      docPromise,
       root.fetch('js/vendor/consensus-points/' + paperId + '.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
       root.fetch('js/vendor/answer-points/' + paperId + '.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
     ]).then(function(res) {
@@ -2191,12 +2249,12 @@
       $('settings-official-title').textContent = info.sharedReady ? (info.officialModel || Api.SERVER_DEFAULT_MODEL) : '共享模型未连接';
       $('settings-official-description').textContent = info.sharedProvider === 'opencode-go'
         ? '由站主电脑上的 OpenCode Go 提供，仅支持文本；电脑、OpenCode 和桥接服务关闭时不可用。'
-        : '共享模型由站主配置的服务端密钥提供；使用者只需填写访问口令。';
+        : '共享模型由站主配置的服务端密钥提供；登录账号后即可使用。';
       $('settings-official-status').textContent = info.sharedReady
         ? '已启用 · ' + info.officialModel + (info.sharedProvider === 'opencode-go' ? ' · 本机 OpenCode 桥接' : ' · 服务端模型')
         : '共享服务尚未配置。';
       if (cfg.mode === 'server') $('settings-mode-hint').textContent = info.sharedReady
-        ? '共享模型：' + info.officialModel + '。请求由站主服务器转发；填写访问口令即可使用。'
+        ? '共享模型：' + info.officialModel + '。已通过账号登录，请求由站主服务器转发。'
         : '共享模型尚未连接，请稍后再试或切换到自带 Key 模式。';
     }).catch(function () { $('settings-official-status').textContent = '暂时无法连接共享服务'; });
 
@@ -2208,7 +2266,6 @@
     if (cfg.mode !== 'server') $('settings-mode-hint').textContent =
       '自带 Key 模式：填自己的 API Key，请求经服务器纯转发，服务器不保存你的密钥。';
 
-    $('settings-code').value = cfg.accessCode;
     $('settings-selfkey').hidden = cfg.mode !== 'selfkey';
 
     if (cfg.mode === 'selfkey') {
@@ -2314,8 +2371,7 @@
   /** 收集设置页当前填写的配置 */
   function collectSettings() {
     var patch = {
-      mode: Store.getConfig().mode,
-      accessCode: $('settings-code').value
+      mode: Store.getConfig().mode
     };
     if (patch.mode === 'selfkey') {
       var modelSel = $('settings-model');
@@ -2387,9 +2443,9 @@
       body: JSON.stringify({ apiKey: cfg.apiKey })
     }).then(function (res) { return res.json(); }).then(function (result) {
       if (!result.ok) throw new Error(result.error || '保存失败');
-      Store.setConfig({ mode: 'server', apiKey: '', model: '', visionModel: '', accessCode: result.accessCode });
+      Store.setConfig({ mode: 'server', apiKey: '', model: '', visionModel: '' });
       mountSettings();
-      out.textContent = '已启用官方模型。测试口令：' + result.accessCode;
+      out.textContent = '已启用共享模型，登录账号后即可使用。注册邀请码已保留。';
       refreshGradeTip(); refreshChatTip();
       toast('已启用官方共享模型');
     }).catch(function (error) {
@@ -2400,25 +2456,16 @@
   // ================= 访问口令弹窗 =================
 
   function openCodeModal(hint) {
-    var mask = $('code-modal');
-    $('code-modal-hint').textContent = hint || '主人会把这串口令发给你，填一次即可长期使用。';
-    $('code-modal-input').value = Store.getConfig().accessCode || '';
-    mask.hidden = false;
-    setTimeout(function () {
-      $('code-modal-input').focus();
-    }, 30);
+    if (root.Auth && !root.Auth.isOffline() && !root.Auth.isAuthenticated()) root.Auth.requireLogin(hint);
   }
 
   function closeCodeModal() {
-    $('code-modal').hidden = true;
+    // Kept as a harmless compatibility hook for existing page callbacks.
   }
 
   /** 错误里带「口令」或 401 时，主动弹出口令框 */
   function maybePromptCode(message) {
-    var text = String(message || '');
-    if (/口令|HTTP 401/.test(text)) {
-      openCodeModal('口令没填或填错了，请重新输入主人发给你的那串口令。');
-    }
+    if (root.Auth && !root.Auth.isOffline() && !root.Auth.isAuthenticated()) root.Auth.requireLogin(message);
   }
 
   // ================= 事件绑定 =================
@@ -2727,21 +2774,6 @@
       });
     }
 
-    // ---- 口令弹窗 ----
-    $('code-modal-ok').addEventListener('click', function () {
-      var code = $('code-modal-input').value || '';
-      Store.setConfig({ accessCode: code });
-      closeCodeModal();
-      if (State.view === 'settings') mountSettings();
-      refreshGradeTip(); // 口令存好后立刻刷新批改页提示，否则仍显示「还没有填访问口令」
-      toast(code ? '口令已保存' : '已跳过，可在设置页随时填写');
-    });
-    $('code-modal-cancel').addEventListener('click', function () {
-      closeCodeModal();
-    });
-    $('code-modal-input').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') $('code-modal-ok').click();
-    });
   }
 
   // ================= 启动 =================
@@ -2769,17 +2801,27 @@
       return;
     }
 
-    // 网址版：首次进入且没有口令时主动问一次（方案 §1：朋友只需要填一次访问口令）
-    if (cfg.mode === 'server' && !cfg.accessCode) {
-      setTimeout(function () {
-        openCodeModal('输入站主分享的测试口令，即可使用官方 GLM-5.3-Flash，无需填写 API Key。');
-      }, 400);
+  }
+
+  // Runs synchronously before account transitions or a privacy curtain.
+  root.resetAccountActivity = function () {
+    abortGradeStream(); stopResultPolling(); abortChat(); abortScan();
+    if (State.study.task && typeof State.study.task.abort === 'function') State.study.task.abort();
+    State.study.task = null;
+    $('chat-bar').hidden = true;
+  };
+
+  function startWithSession() {
+    if (root.AuthUI) root.AuthUI.start(boot);
+    else if (root.location.protocol === 'file:') {
+      doc.body.classList.remove('auth-locked');
+      boot();
     }
   }
 
   if (doc.readyState === 'loading') {
-    doc.addEventListener('DOMContentLoaded', boot);
+    doc.addEventListener('DOMContentLoaded', startWithSession);
   } else {
-    boot();
+    startWithSession();
   }
 })(typeof window !== 'undefined' ? window : this, document);

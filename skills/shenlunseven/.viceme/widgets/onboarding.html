@@ -1,0 +1,53 @@
+<style>
+.viceme-onboarding{max-width:640px;background:transparent;color:var(--color-text-primary,#28352e);font:13px/1.75 var(--font-sans,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif)}.viceme-onboarding *{box-sizing:border-box}.viceme-onboarding .sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.viceme-onboarding h3{margin:0;font-size:15px;font-weight:500}.viceme-onboarding .skill-name{margin:4px 0 20px;color:var(--color-text-secondary,#647369);font-size:12px;overflow-wrap:anywhere}.viceme-onboarding ul{padding:0;margin:0;list-style:none}
+.viceme-onboarding li{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:24px;align-items:center;border-top:.5px solid var(--color-border-tertiary,#e2e8e2);padding:22px 0}.viceme-onboarding li:last-child{padding-bottom:0}.viceme-onboarding h4{font-size:13px;font-weight:500;margin:0 0 7px}.viceme-onboarding .prompt{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--color-text-secondary,#647369);line-height:1.85}
+.viceme-onboarding button{font:inherit;cursor:pointer;padding:6px 12px;border:.5px solid var(--color-border-secondary,#e2e8e2);border-radius:7px;color:var(--color-text-primary,#28674b);background:transparent;white-space:nowrap}.viceme-onboarding button:hover:not(:disabled){background:var(--color-background-secondary,#edf5ee)}.viceme-onboarding button:disabled{opacity:.65;cursor:default}.viceme-onboarding :focus-visible{outline:2px solid var(--color-text-info,#28674b);outline-offset:4px}.viceme-onboarding [role="status"]{color:var(--color-text-secondary,#647369);font-size:12px;margin:14px 0 0}.viceme-onboarding [role="status"]:empty{display:none}
+@media(max-width:480px){.viceme-onboarding li{column-gap:12px}.viceme-onboarding button{padding:6px 9px}}
+</style>
+<section class="viceme-onboarding" aria-label="Skill 上手示例">
+  <h2 class="sr-only">查看完整示例口令，点击按钮发送到对话</h2>
+  <h3 data-field="heading">选个例子，试一下</h3>
+  <p class="skill-name" data-field="skill-name"></p>
+  <ul data-field="examples"></ul>
+  <p role="status" aria-live="polite"></p>
+</section>
+<script>
+(() => {
+  const data = __WIDGET_DATA__;
+  const root = document.querySelector('.viceme-onboarding:not([data-viceme-initialized])');
+  if (!root) return;
+  root.setAttribute("data-viceme-initialized", "true");
+  const dom = root.ownerDocument;
+  const en = data.locale === "en-US";
+  root.querySelector('[data-field="heading"]').textContent = en ? "Pick an example to try" : "选个例子，试一下";
+  root.querySelector('[data-field="skill-name"]').textContent = data.skillName;
+  const list = root.querySelector('[data-field="examples"]');
+  const status = root.querySelector('[role="status"]');
+  const available = typeof sendPrompt === "function";
+  if (!available) status.textContent = en ? "Select a prompt and paste it into the conversation." : "请选择一段口令，手动复制到对话输入框。";
+  for (const {title, prompt} of data.examples) {
+    const row = dom.createElement("li");
+    const content = dom.createElement("div");
+    const heading = dom.createElement("h4"); heading.textContent = title;
+    const text = dom.createElement("p"); text.className = "prompt"; text.textContent = prompt;
+    content.append(heading, text);
+    const button = dom.createElement("button");
+    button.type = "button"; button.textContent = en ? "Try ↗" : "试试 ↗";
+    button.setAttribute("aria-label", (en ? "Try example: " : "使用示例：") + title);
+    button.disabled = !available;
+    button.addEventListener("click", async () => {
+      if (button.disabled) return;
+      const buttons = list.querySelectorAll("button");
+      buttons.forEach(item => { item.disabled = true; });
+      try {
+        await sendPrompt(prompt);
+        status.textContent = en ? "Sent to the conversation." : "已发送到对话。";
+      } catch {
+        status.textContent = en ? "Could not confirm delivery. Check the conversation before sending again." : "未能确认发送结果，请先查看对话，避免重复发送。";
+      }
+    });
+    row.append(content, button); list.append(row);
+  }
+})();
+</script>

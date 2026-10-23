@@ -1,0 +1,217 @@
+<!-- pages/settings/settings.wxml —— 模型接入设置 + Skill 管理 -->
+<view class="page">
+  <view class="card">
+    <view class="card-title">模型与数据传输</view>
+    <view class="muted">登录账号且未填写自己的 API Key 时，使用站点共享模型，无需在此填写密钥。下方用于可选的自带 Key 模式，填写后优先使用。文字、对话和照片会发送至对应接收方，首次使用需确认；自定义地址必须使用 HTTPS 并配置合法域名。清空自带配置后可恢复账号共享模式。</view>
+  </view>
+
+  <!-- ============ 新手引导（未配置时展示） ============ -->
+  <view wx:if="{{!configured}}" class="card guide-card">
+    <view class="card-title">三步开始批改</view>
+    <view class="step">
+      <text class="step-no">一</text>
+      <view class="flex-1">
+        <view class="step-title">选择供应商</view>
+        <view class="muted">下方六个宫格任选其一，地址与模型候选会自动填好。</view>
+      </view>
+    </view>
+    <view class="step">
+      <text class="step-no">二</text>
+      <view class="flex-1">
+        <view class="step-title">填写 API Key</view>
+        <view class="muted">在对应厂商控制台申请 Key，粘贴到下面的密码框。Key 只存在本机 storage，请勿使用生产密钥。</view>
+      </view>
+    </view>
+    <view class="step">
+      <text class="step-no">三</text>
+      <view class="flex-1">
+        <view class="step-title">测试连接并保存</view>
+        <view class="muted">点「测试连接」确认可用，再点「保存设置」，然后去写第一篇申论。</view>
+      </view>
+    </view>
+    <button class="btn-primary" bindtap="onGoGrade">去写第一篇</button>
+  </view>
+
+  <!-- ============ 供应商预设宫格 ============ -->
+  <view class="card">
+    <view class="card-title">供应商预设</view>
+    <view class="preset-grid">
+      <view
+        class="preset-item {{presetId === item.id ? 'preset-active' : ''}}"
+        wx:for="{{presets}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onPickPreset">
+        <text class="preset-name">{{item.name}}</text>
+      </view>
+    </view>
+    <view wx:if="{{presetDoc}}" class="field-hint preset-doc">{{presetDoc}}</view>
+  </view>
+
+  <!-- ============ 连接配置 ============ -->
+  <view class="card">
+    <view class="card-title">连接配置</view>
+
+    <view class="field">
+      <text class="field-label">模型地址 baseURL</text>
+      <input
+        class="input-box"
+        value="{{baseURL}}"
+        placeholder="https://api.example.com/v1"
+        placeholder-class="ph"
+        bindinput="onBaseURLInput" />
+      <text class="field-hint">填到 /v1 一级即可，不要带 /chat/completions。</text>
+    </view>
+
+    <view class="field">
+      <text class="field-label">API Key</text>
+      <input
+        class="input-box"
+        value="{{apiKey}}"
+        password="{{true}}"
+        placeholder="粘贴你的 API Key"
+        placeholder-class="ph"
+        bindinput="onApiKeyInput" />
+      <text class="field-hint">密钥仅保存在本机 storage，适合自用，不适合分发给他人。</text>
+    </view>
+
+    <view class="field">
+      <text class="field-label">模型</text>
+      <picker
+        mode="selector"
+        range="{{modelOptions}}"
+        value="{{modelIndex}}"
+        bindchange="onModelChange">
+        <view class="input-box picker-box {{modelOptions.length === 0 ? 'picker-empty' : ''}}">
+          <text>{{modelOptions.length === 0 ? '该预设无候选模型，请手动输入' : modelOptions[modelIndex]}}</text>
+          <view class="picker-arrow"></view>
+        </view>
+      </picker>
+      <view class="row-between model-row">
+        <text class="field-hint">候选：{{modelOptionsText || '无'}}</text>
+        <text class="link" bindtap="onToggleModelInput">{{showModelInput ? '收起手输' : '手输模型名'}}</text>
+      </view>
+      <input
+        wx:if="{{showModelInput}}"
+        class="input-box model-input"
+        value="{{model}}"
+        placeholder="输入自定义模型名，如 gpt-4o-mini"
+        placeholder-class="ph"
+        bindinput="onModelInput" />
+    </view>
+
+    <!-- 视觉模型（拍照识别，方案 §4.5） -->
+    <view class="field">
+      <text class="field-label">视觉模型（用于拍照识别）</text>
+      <picker
+        mode="selector"
+        range="{{visionOptions}}"
+        value="{{visionIndex}}"
+        bindchange="onVisionChange">
+        <view class="input-box picker-box {{hasVisionModels ? '' : 'picker-empty'}}">
+          <text wx:if="{{visionModel}}">{{visionModel}}</text>
+          <text wx:elif="{{hasVisionModels}}" class="picker-empty">未配置（默认用主模型）</text>
+          <text wx:else class="picker-empty">暂无视觉模型</text>
+          <view class="picker-arrow"></view>
+        </view>
+      </picker>
+      <view class="row-between model-row">
+        <text class="field-hint">候选：{{visionOptionsText || '无'}}</text>
+        <text class="link" bindtap="onToggleVisionInput">{{showVisionInput ? '收起手输' : '手输模型名'}}</text>
+      </view>
+      <input
+        wx:if="{{showVisionInput}}"
+        class="input-box model-input"
+        value="{{visionModel}}"
+        placeholder="输入自定义视觉模型名，如 qwen-vl-max"
+        placeholder-class="ph"
+        bindinput="onVisionInput" />
+      <view wx:if="{{visionModel}}" class="row-between vision-foot">
+        <text class="field-hint">拍照识别将调用 {{visionModel}} 转录手写答题卡。</text>
+        <text class="link" bindtap="onClearVision">清空</text>
+      </view>
+      <text wx:elif="{{!hasVisionModels}}" class="field-hint">该预设未提供视觉模型，拍照识别不可用；可在支持图片的接口上手输模型名。</text>
+    </view>
+
+    <!-- 测试连接 -->
+    <view class="field">
+      <button class="btn-ghost test-btn {{testing ? 'disabled' : ''}}" bindtap="onTestConnection" disabled="{{testing}}">
+        {{testing ? '测试中…' : '测试连接'}}
+      </button>
+      <view wx:if="{{testResult}}" class="test-box {{testResult.ok ? 'test-ok' : 'test-fail'}}">
+        <view class="test-line">
+          <text class="test-tag">{{testResult.ok ? '连接成功' : '连接失败'}}</text>
+          <text wx:if="{{testResult.ok}}" class="muted">耗时 {{testResult.latencyMs}} 毫秒</text>
+          <text wx:else class="muted">{{testResult.time}}</text>
+        </view>
+        <view class="test-msg">{{testResult.message}}</view>
+      </view>
+    </view>
+
+    <button class="btn-primary" bindtap="onSave">{{saving ? '保存中…' : '保存设置'}}</button>
+    <button class="btn-ghost danger-btn" bindtap="onClearConfig">清空配置</button>
+  </view>
+
+  <!-- ============ Skill 管理 ============ -->
+  <view class="card">
+    <view class="card-title">Skill 管理</view>
+
+    <view class="skill-head">
+      <text class="skill-name">{{skillMeta.name}}</text>
+      <text class="skill-ver">版本 {{skillMeta.version}}</text>
+    </view>
+    <view class="quote-red skill-summary">{{skillMeta.summary}}</view>
+    <view class="muted skill-source">{{skillMeta.source}}</view>
+
+    <view class="divider"></view>
+
+    <text class="field-label">内置说明文档 skill/SHENLUN-SKILL.md 章节</text>
+    <view class="outline">
+      <view class="outline-item" wx:for="{{skillDocOutline}}" wx:key="*this">
+        <view class="dot"></view>
+        <text class="flex-1">{{item}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{skillMeta.features.length}}" class="features">
+      <view class="feature" wx:for="{{skillMeta.features}}" wx:key="*this">{{item}}</view>
+    </view>
+
+    <view class="divider"></view>
+
+    <view class="row-between">
+      <text class="field-label switch-label">启用自定义 Skill 覆盖</text>
+      <switch checked="{{skillEnabled}}" color="#FF6B35" bindchange="onSkillToggle" />
+    </view>
+    <text class="field-hint">开启后，粘贴的文本将替代内置提示词；关闭则恢复内置版本。</text>
+
+    <view class="field">
+      <view class="row-between">
+        <text class="field-label">粘贴自定义 Skill</text>
+        <text class="link" bindtap="onSkillPaste">从剪贴板粘贴</text>
+      </view>
+      <textarea
+        class="input-box skill-area"
+        value="{{skillText}}"
+        placeholder="把原版 Skill 提示词粘贴到这里，可覆盖内置版本"
+        placeholder-class="ph"
+        maxlength="-1"
+        auto-height="{{false}}"
+        bindinput="onSkillTextInput" />
+      <view class="row-between">
+        <text class="field-hint">已输入 {{skillTextLen}} 字</text>
+        <text class="field-hint {{skillOverLimit ? 'danger' : ''}}">上限 8000 字</text>
+      </view>
+    </view>
+
+    <button class="btn-primary" bindtap="onSaveSkill">保存 Skill</button>
+    <view class="row">
+      <button class="btn-ghost half" bindtap="onExportSkill">导出到剪贴板</button>
+      <button class="btn-ghost half danger-btn" bindtap="onClearSkill">清空文本</button>
+    </view>
+    <text class="field-hint disclaimer">{{skillMeta.disclaimer}}</text>
+  </view>
+
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

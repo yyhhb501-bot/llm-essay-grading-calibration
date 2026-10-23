@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="card">
+    <view class="card-title">账号与本机记录</view>
+    <view class="paragraph">用户名、密码及注册邀请码通过 HTTPS 发送至 shenlundawang.asia。本站账号服务保存密码派生值与会话摘要；小程序保存当前账号资料和会话，不保存密码或邀请码。网站与小程序共用账号。</view>
+    <view class="paragraph">各账号的模型配置、历史与计划在本机分开保存，暂不跨设备同步。原未登录记录独立保留，不会自动导入账号。退出会尝试撤销服务器会话；仅本机退出时服务器会话可能保留至到期。修改密码会使其他旧会话失效。</view>
+    <view class="paragraph">删除全部本机数据会删除此设备所有账号缓存及未登录记录，不会注销服务器账号，也不代替模型服务商端删除。</view>
+  </view>
+  <view class="card">
+    <view class="card-title">AI 辅助学习</view>
+    <view class="paragraph">评分、评语、升格示范、陪练回复和备考计划由 AI 生成，可能存在误判或错误。请核实后使用，不代表官方阅卷结论或任何教师的本人回复。本服务不承诺考试成绩。</view>
+    <view class="paragraph">页面在生成内容附近显示 AI 提示，复制 AI 内容时会附带生成声明，请在转发时保留标识。</view>
+  </view>
+  <view class="card">
+    <view class="card-title">当前模型接收方</view>
+    <view class="paragraph">模型：{{model}}</view>
+    <view class="paragraph">接收域名：{{endpoint}}</view>
+    <view class="paragraph">自带 Key 模式按本机设置发送；账号共享模式先发送至本站，再由本站转交已配置的模型服务商（以站点实际配置为准）。域名展示不代表已核验接收方身份或备案情况。</view>
+  </view>
+  <view class="card">
+    <view class="card-title">哪些数据会发送</view>
+    <view class="paragraph">批改发送题目、材料和作答；陪练发送问题及相关对话；计划发送基础水平、可用时长、目标和剩余周数；图片识别发送你选择的答题照片。请求还包含教学提示词。自带模式发送对应 API Key；账号共享模式的会话仅发往本站，本站不会向小程序下发共享模型密钥。</view>
+    <view class="paragraph">仅在你主动使用相关功能时发起模型请求。首次使用接收域名时会询问是否同意发送；拒绝不会发送。更换域名后会重新询问。测试连接也会发送认证信息及测试文字。账号会话还会在小程序回到前台时向本站检查有效性，该检查不发送作答内容。</view>
+    <view class="paragraph">API Key、本地历史和计划保存在当前设备。发送给模型服务商的数据可能按其政策保存或处理，本机删除不能代替服务商端删除。请勿上传身份证号、准考证号及其他不必要的个人信息。</view>
+  </view>
+  <view class="card">
+    <view class="card-title">管理数据与授权</view>
+    <view class="paragraph">在“我的”中可清空本地历史、删除全部本地数据，或撤回模型数据传输同意。撤回后，下一次请求将重新询问，不会撤回已经发送的数据。微信隐私权限可通过小程序设置管理。</view>
+    <button class="btn-ghost" bindtap="onOpenPrivacy">查看微信用户隐私保护指引</button>
+  </view>
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

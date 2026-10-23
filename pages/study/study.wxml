@@ -1,0 +1,109 @@
+<!-- pages/study/study.wxml —— 备考计划：表单 → 流式生成 → 打卡 -->
+<view class="page">
+
+  <!-- ============ 表单 ============ -->
+  <view class="card">
+    <view class="card-title">你的备考情况</view>
+
+    <view class="field">
+      <text class="field-label">基础水平</text>
+      <picker mode="selector" range="{{levels}}" value="{{levelIndex}}" bindchange="onLevelChange">
+        <view class="input-box picker-box"><text>{{levels[levelIndex]}}</text><view class="arrow"></view></view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <text class="field-label">每日可用时长</text>
+      <picker mode="selector" range="{{dailyLabels}}" value="{{dailyIndex}}" bindchange="onDailyChange">
+        <view class="input-box picker-box"><text>{{dailyLabels[dailyIndex]}}</text><view class="arrow"></view></view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <text class="field-label">目标岗位</text>
+      <picker mode="selector" range="{{targets}}" value="{{targetIndex}}" bindchange="onTargetChange">
+        <view class="input-box picker-box"><text>{{targets[targetIndex]}}</text><view class="arrow"></view></view>
+      </picker>
+    </view>
+
+    <view class="field">
+      <text class="field-label">距离考试</text>
+      <picker mode="selector" range="{{weekOptions}}" value="{{weekIndex}}" bindchange="onWeekChange">
+        <view class="input-box picker-box"><text>{{weekOptions[weekIndex]}}</text><view class="arrow"></view></view>
+      </picker>
+      <text class="field-hint">计划会按剩余 {{weeks}} 周排布，打卡列表同步为 {{weeks}} 周。</text>
+    </view>
+
+    <button class="btn-primary" bindtap="onGenerate" disabled="{{generating}}">
+      {{generating ? '正在生成…' : '生成备考计划'}}
+    </button>
+    <text class="field-hint center">计划由 AI 生成，仅供学习参考，请结合自身情况调整。</text>
+  </view>
+
+  <!-- ============ 未配置模型时的引导 ============ -->
+  <view wx:if="{{errorMsg}}" class="card error-card">
+    <view class="card-title">生成失败</view>
+    <view class="error-msg">{{errorMsg}}</view>
+    <view class="row">
+      <button class="btn-ghost half" bindtap="onRegenerate">重试</button>
+      <button class="btn-ghost half" bindtap="onGoSettings">去设置</button>
+    </view>
+  </view>
+
+  <!-- ============ 计划正文 ============ -->
+  <view wx:if="{{hasPlan || blocks.length > 0}}" class="card plan-card">
+    <view class="row-between plan-head">
+      <view class="card-title head-plain">备考计划 · AI 生成</view>
+      <view class="row">
+        <text class="link" bindtap="onCopyPlan">复制全文</text>
+      </view>
+    </view>
+    <view wx:if="{{updatedAt}}" class="muted updated">生成于 {{updatedAt}}</view>
+
+    <view wx:if="{{generating}}" class="streaming-tip">正在流式生成，已完成部分可先阅读…</view>
+
+    <view class="md-body">
+      <view wx:for="{{blocks}}" wx:key="*this" class="{{item.cls}}">
+        <text wx:for="{{item.segments}}" wx:for-item="seg" wx:key="*this"
+              class="{{seg.bold ? 'seg-bold' : ''}}">{{seg.text}}</text>
+      </view>
+      <view wx:if="{{generating}}" class="cursor"></view>
+    </view>
+  </view>
+
+  <!-- 空态：还没生成过 -->
+  <view wx:if="{{!hasPlan && !generating && !errorMsg}}" class="empty">
+    <view class="empty-title">还没有备考计划</view>
+    <view class="empty-sub">填完上面四项，点「生成备考计划」，AI 会按周安排训练量、背诵清单与复盘动作。</view>
+  </view>
+
+  <!-- ============ 按周打卡 ============ -->
+  <view wx:if="{{hasPlan}}" class="card">
+    <view class="card-title">按周打卡</view>
+    <view class="row-between progress">
+      <text class="muted">已完成 {{doneCount}} / {{checkins.length}} 周</text>
+      <text class="link" bindtap="onResetCheckins">重置</text>
+    </view>
+    <view class="bar-track progress-track">
+      <view class="bar-fill" style="width: {{checkins.length === 0 ? 0 : doneCount * 100 / checkins.length}}%;"></view>
+    </view>
+
+    <view class="check-list">
+      <view
+        class="check-item"
+        wx:for="{{checkins}}"
+        wx:key="week"
+        data-week="{{item.week}}"
+        bindtap="onToggleCheckin">
+        <view class="box {{item.checked ? 'box-on' : ''}}">
+          <view wx:if="{{item.checked}}" class="tick"></view>
+        </view>
+        <text class="check-label {{item.checked ? 'check-on' : ''}}">{{item.label}}</text>
+      </view>
+    </view>
+    <text class="field-hint">打卡状态保存在本机，下次进入自动回显。</text>
+  </view>
+
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

@@ -1,0 +1,111 @@
+{
+  "appid": "wxfc20904270c1c380",
+  "projectname": "shenlun-zhupi",
+  "compileType": "miniprogram",
+  "libVersion": "3.5.5",
+  "miniprogramRoot": "./",
+  "packOptions": {
+    "ignore": [
+      { "value": "data/papers-full", "type": "folder" },
+      { "value": "data/answers-crawled", "type": "folder" },
+      { "value": "data/answer-points", "type": "folder" },
+      { "value": "data/consensus-points", "type": "folder" },
+      { "value": "data/paper-catalog.json", "type": "file" },
+      { "value": "data/paper-catalog-supplements.json", "type": "file" },
+      { "value": "data/answer-audit.json", "type": "file" },
+      { "value": "data/answer-sources.json", "type": "file" },
+      { "value": ".agent", "type": "folder" },
+      { "value": ".wrangler", "type": "folder" },
+      { "value": ".git", "type": "folder" },
+      { "value": "server", "type": "folder" },
+      { "value": "docs", "type": "folder" },
+      { "value": ".runtime", "type": "folder" },
+      { "value": "output", "type": "folder" },
+      {
+        "value": "skills",
+        "type": "folder"
+      },
+      {
+        "value": "tools",
+        "type": "folder"
+      },
+      {
+        "value": ".zcode",
+        "type": "folder"
+      },
+      {
+        "value": "assets",
+        "type": "folder"
+      },
+      {
+        "value": "site",
+        "type": "folder"
+      },
+      {
+        "value": "worker",
+        "type": "folder"
+      },
+      {
+        "value": "site-server.js",
+        "type": "file"
+      },
+      {
+        "value": "方案-网站.md",
+        "type": "file"
+      },
+      {
+        "value": "skill/SHENLUN-SKILL.md",
+        "type": "file"
+      },
+      {
+        "value": "方案.md",
+        "type": "file"
+      },
+      {
+        "value": "README.md",
+        "type": "file"
+      }
+    ],
+    "include": []
+  },
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": false,
+    "enhance": true,
+    "showShadowRootInWxmlPanel": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "nodeModules": false,
+    "ignoreUploadUnusedFiles": true,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "首页",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  },
+  "simulatorPluginLibVersion": {},
+  "editorSetting": {}
+}

@@ -1,0 +1,65 @@
+{
+  "feature_names": [
+    "raw_llm_score",
+    "key_point_coverage",
+    "dim_keypoints",
+    "dim_logic",
+    "dim_language",
+    "dim_policy",
+    "dim_format",
+    "word_count",
+    "type_guina",
+    "type_zonghe",
+    "type_duice",
+    "type_gongwen",
+    "type_wenzhang"
+  ],
+  "weights": {
+    "raw_llm_score": 0.19333059670674035,
+    "key_point_coverage": -1.6789377399120948,
+    "dim_keypoints": 0.27295877479532454,
+    "dim_logic": 0.5723416983955363,
+    "dim_language": 0.6956861567465796,
+    "dim_policy": 0.8997978384786015,
+    "dim_format": 1.4881065222544376,
+    "word_count": -0.020087116046183764,
+    "type_guina": 7.660365329680679,
+    "type_zonghe": 2.825846935932072,
+    "type_duice": -2.528548993696745,
+    "type_gongwen": -7.351747075320086,
+    "type_wenzhang": -0.7276476684386441,
+    "intercept": 19.765911034161014
+  },
+  "metrics_summary": {
+    "raw_llm": {
+      "mae": 6.66,
+      "rmse": 8.3,
+      "pearson_r": 0.558,
+      "qwk": 0.519
+    },
+    "ridge": {
+      "mae": 3.81,
+      "rmse": 4.82,
+      "pearson_r": 0.833,
+      "qwk": 0.76
+    },
+    "gbdt": {
+      "mae": 4.14,
+      "rmse": 5.22,
+      "pearson_r": 0.801,
+      "qwk": 0.724
+    },
+    "ensemble": {
+      "mae": 3.86,
+      "rmse": 4.88,
+      "pearson_r": 0.828,
+      "qwk": 0.752
+    }
+  },
+  "metadata": {
+    "total_samples": 2420,
+    "valid_samples": 2347,
+    "num_prompts": 24,
+    "cv_strategy": "GroupKFold by prompt_id (generalization to unseen prompts)"
+  }
+}

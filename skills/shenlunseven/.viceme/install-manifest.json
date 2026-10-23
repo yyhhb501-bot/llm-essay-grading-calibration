@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "cli_version": "viceme-trial-script/1",
+  "skill_version": "1",
+  "minimum_cli_version": "",
+  "cli_compatibility": "script",
+  "full_skill_bundle_digest": "",
+  "embedded_content_digest": "",
+  "product_id": "2ce67723-79c6-476e-8d11-f5dffa359f72",
+  "release_id": "fcf78aa3-bb69-413c-8faa-a0cefe67c905"
+}

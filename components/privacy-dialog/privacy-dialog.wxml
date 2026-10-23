@@ -1,0 +1,11 @@
+<view wx:if="{{visible}}" class="privacy-mask" catchtouchmove="stopTouch">
+  <view class="privacy-card">
+    <view class="privacy-title">请阅读隐私保护指引</view>
+    <view class="privacy-body">此操作涉及照片或剪贴板等信息。请先阅读并决定是否同意；拒绝后不会执行本次操作。</view>
+    <button class="privacy-link" bindtap="onOpenContract">查看《{{contractName}}》</button>
+    <view class="privacy-actions">
+      <button bindtap="onDecline">暂不同意</button>
+      <button id="privacy-agree-button" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="onAgree" class="privacy-agree">同意并继续</button>
+    </view>
+  </view>
+</view>

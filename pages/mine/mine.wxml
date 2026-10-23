@@ -1,0 +1,90 @@
+<!-- pages/mine/mine.wxml —— 我的 -->
+<view class="page">
+
+  <view class="card account-summary">
+    <view class="card-title">{{authenticated ? accountName : '登录学习账号'}}</view>
+    <view class="muted">{{authenticated ? '网站与小程序账号共用；当前记录仅保存在此设备。' : '使用用户名和密码登录，注册时填写邀请码。原本机记录独立保留。'}}</view>
+    <button wx:if="{{!authenticated}}" class="btn-primary account-action" bindtap="onGoAccount">登录 / 注册</button>
+    <view wx:else class="account-actions">
+      <button class="btn-ghost account-action-item" bindtap="onChangePassword">修改密码</button>
+      <button class="btn-ghost account-action-item" bindtap="onLogout">退出登录</button>
+    </view>
+  </view>
+
+  <!-- 本地统计数据卡 -->
+  <view class="card stat-card">
+    <view class="stat-item">
+      <view class="score-num stat-num">{{gradeCount}}</view>
+      <view class="stat-label">累计批改篇数</view>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <view class="score-num stat-num">{{avgScoreText}}</view>
+      <view class="stat-label">{{avgLabelText}}</view>
+    </view>
+  </view>
+
+  <view class="stat-sub">本地对话 {{chatCount}} 条 · 数据均保存在当前设备</view>
+
+  <!-- 工具设置 -->
+  <view class="card list-card">
+    <view class="group-title">学习与工具</view>
+
+    <view class="list-row" bindtap="onGoSettings">
+      <text class="list-label flex-1">模型与 API 设置</text>
+      <text class="list-extra {{configured ? 'extra-ok' : 'extra-warn'}}">{{configText}}</text>
+      <text class="list-arrow"></text>
+    </view>
+
+    <view class="list-row" bindtap="onGoHistory">
+      <text class="list-label flex-1">练习与批改历史</text>
+      <text class="list-extra">{{gradeCount + chatCount}} 条</text>
+      <text class="list-arrow"></text>
+    </view>
+
+    <view class="list-row" bindtap="onGoStudy">
+      <text class="list-label flex-1">备考进度与打卡</text>
+      <text class="list-arrow"></text>
+    </view>
+  </view>
+
+  <!-- 隐私与数据 -->
+  <view class="card list-card">
+    <view class="group-title">隐私与数据安全</view>
+
+    <view class="list-row" bindtap="onGoService">
+      <text class="list-label flex-1">AI 服务与数据说明</text>
+      <text class="list-arrow"></text>
+    </view>
+
+    <view class="list-row" bindtap="onRevokeModelConsent">
+      <text class="list-label flex-1">撤回模型数据传输同意</text>
+      <text class="list-arrow"></text>
+    </view>
+
+    <view class="list-row list-row-danger" bindtap="onClearHistory">
+      <text class="list-label danger flex-1">清空本地历史记录</text>
+      <text class="list-arrow list-arrow-danger"></text>
+    </view>
+
+    <view class="list-row list-row-danger" bindtap="onDeleteLocalData">
+      <text class="list-label danger flex-1">删除全部本地数据</text>
+      <text class="list-arrow list-arrow-danger"></text>
+    </view>
+  </view>
+
+  <!-- 关于 -->
+  <view class="card list-card">
+    <view class="group-title">关于与说明</view>
+    <view class="list-row" bindtap="onShowAbout">
+      <text class="list-label flex-1">作文批改大人</text>
+      <text class="list-extra">v{{skillVersion}}</text>
+      <text class="list-arrow"></text>
+    </view>
+  </view>
+
+  <view class="footer-tip">{{disclaimer}}</view>
+
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

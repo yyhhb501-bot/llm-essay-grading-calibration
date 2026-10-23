@@ -1,0 +1,344 @@
+/* pages/result/result.wxss —— 批改报告页样式 */
+
+.disclaimer-strip {
+  background-color: var(--line-light);
+  padding: 10rpx 20rpx;
+  border-radius: 10rpx;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.disclaimer-text {
+  font-size: 22rpx;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.mt-m {
+  margin-top: 24rpx;
+}
+
+.py-m {
+  padding: 30rpx 0;
+  text-align: center;
+}
+
+/* 提示卡 */
+.tip-card {
+  border-left: 6rpx solid var(--cinnabar);
+}
+
+.tip-desc {
+  font-size: 26rpx;
+  color: var(--sub);
+  line-height: 1.6;
+  margin-top: 10rpx;
+}
+
+.tip-btn {
+  margin-top: 18rpx;
+  height: 76rpx;
+  font-size: 28rpx;
+  border-radius: 14rpx;
+}
+
+/* 头部卡 */
+.head-card {
+  padding-bottom: 22rpx;
+}
+
+.head-type {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--cinnabar);
+  background-color: var(--cinnabar-soft);
+  border-radius: var(--radius-pill);
+  padding: 3rpx 14rpx;
+}
+
+.head-time {
+  font-size: 23rpx;
+  color: var(--muted);
+}
+
+.head-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 16rpx 0 14rpx;
+  line-height: 1.4;
+}
+
+.head-meta {
+  font-size: 24rpx;
+  border-top: 1rpx solid var(--line-light);
+  padding-top: 14rpx;
+  margin-top: 12rpx;
+}
+
+.link-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  cursor: pointer;
+}
+
+.link-text {
+  color: var(--cinnabar);
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.link-arrow {
+  width: 11rpx;
+  height: 11rpx;
+  border-top: 2rpx solid var(--cinnabar);
+  border-right: 2rpx solid var(--cinnabar);
+  transform: rotate(135deg);
+  transition: transform 0.2s ease;
+}
+
+.link-arrow.arrow-up {
+  transform: rotate(-45deg);
+}
+
+/* 原题展开卡 */
+.paper-card {
+  background-color: #FAFBFC;
+}
+
+.pre-text-scroll {
+  max-height: 380rpx;
+}
+
+.pre-text {
+  display: block;
+  white-space: pre-wrap;
+  font-size: 26rpx;
+  line-height: 1.75;
+  color: var(--ink-sub);
+  background-color: #FFFFFF;
+  border: 1rpx solid var(--line);
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+}
+
+/* 分数卡 */
+.score-card {
+  padding: 28rpx;
+}
+
+.score-row {
+  align-items: flex-end;
+  margin: 12rpx 0 24rpx;
+}
+
+.score-left {
+  display: flex;
+  align-items: baseline;
+}
+
+.score-empty-hint {
+  font-size: 26rpx;
+  line-height: 1.6;
+  margin: 10rpx 0 16rpx;
+}
+
+.dim-list {
+  margin-top: 12rpx;
+  border-top: 1rpx solid var(--line-light);
+  padding-top: 16rpx;
+}
+
+.dim-item {
+  margin-bottom: 22rpx;
+}
+
+.dim-item:last-child {
+  margin-bottom: 4rpx;
+}
+
+.dim-header {
+  margin-bottom: 8rpx;
+}
+
+.dim-name {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dim-score {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--cinnabar);
+  font-family: -apple-system, "DIN Alternate", sans-serif;
+}
+
+.dim-comment {
+  display: block;
+  font-size: 23rpx;
+  color: var(--sub);
+  line-height: 1.5;
+  margin-top: 8rpx;
+}
+
+/* 错误中断卡 */
+.err-card {
+  border-left: 6rpx solid var(--danger);
+}
+
+.err-msg {
+  font-size: 26rpx;
+  color: var(--danger);
+  line-height: 1.6;
+  margin: 12rpx 0 18rpx;
+}
+
+/* 分栏导航 (Segmented Tabbar) */
+.report-tabs {
+  display: flex;
+  background-color: var(--line-light);
+  border-radius: 14rpx;
+  padding: 6rpx;
+  margin-bottom: 20rpx;
+  gap: 4rpx;
+}
+
+.report-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--sub);
+  padding: 14rpx 6rpx;
+  border-radius: 10rpx;
+  transition: all 0.15s ease;
+}
+
+.report-tab-active {
+  background-color: #FFFFFF;
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+/* Markdown 头部与状态 */
+.md-header {
+  margin-bottom: 8rpx;
+}
+
+.streaming-tip {
+  font-size: 23rpx;
+  color: var(--cinnabar);
+  font-weight: 500;
+}
+
+.md-body {
+  margin-top: 10rpx;
+}
+
+/* 批注拆解卡 */
+.issue-item {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--line-light);
+}
+
+.issue-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.issue-quote {
+  white-space: pre-wrap;
+  margin: 0 0 12rpx;
+  font-size: 26.5rpx;
+  line-height: 1.7;
+}
+
+.issue-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+
+.issue-tag {
+  font-size: 21rpx;
+  font-weight: 500;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+}
+
+.issue-comment {
+  font-size: 27rpx;
+  color: var(--ink);
+  line-height: 1.6;
+  flex: 1;
+}
+
+.tag-red {
+  color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
+.tag-gold {
+  color: var(--gold);
+  background-color: var(--gold-soft);
+}
+
+.tag-ink {
+  color: var(--ink);
+  background-color: var(--line-light);
+}
+
+.tag-sub {
+  color: var(--sub);
+  background-color: var(--line-light);
+}
+
+.issue-sug {
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  color: var(--cinnabar-deep);
+  background-color: var(--cinnabar-soft);
+  padding: 12rpx 16rpx;
+  border-radius: 10rpx;
+  line-height: 1.6;
+}
+
+/* 升格示范 */
+.upgrade-body {
+  white-space: pre-wrap;
+  font-size: 28rpx;
+  line-height: 1.85;
+  color: var(--ink);
+  border-left: 5rpx solid var(--gold);
+  background-color: var(--gold-soft);
+  padding: 20rpx 22rpx;
+  border-radius: 0 12rpx 12rpx 0;
+}
+
+/* 底部操作 */
+.foot-actions {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 10rpx;
+}
+
+.foot-actions .btn-primary,
+.foot-actions .btn-ghost {
+  flex: 1;
+  height: 88rpx;
+  font-size: 29rpx;
+  margin: 0;
+}
+
+.foot-note {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 16rpx;
+}

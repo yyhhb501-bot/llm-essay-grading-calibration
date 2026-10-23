@@ -1,0 +1,13 @@
+.account-page { padding-top: 44rpx; }
+.account-brand { font-size: 40rpx; font-weight: 700; color: var(--ink); }
+.account-subtitle { margin: 10rpx 0 36rpx; font-size: 26rpx; color: var(--sub); }
+.account-title { font-size: 34rpx; font-weight: 600; margin-bottom: 24rpx; }
+.account-tabs { display: flex; padding: 6rpx; margin-bottom: 28rpx; background: var(--paper); border-radius: 14rpx; }
+.account-tab { flex: 1; text-align: center; padding: 20rpx 0; color: var(--sub); border-radius: 10rpx; }
+.account-tab-active { color: var(--cinnabar-deep); background: var(--card); font-weight: 600; }
+.account-hint { margin-bottom: 24rpx; color: var(--sub); font-size: 26rpx; word-break: break-all; }
+.account-error { margin: 20rpx 0; padding: 20rpx; border-radius: 12rpx; background: #FEF2F2; color: #B91C1C; font-size: 26rpx; word-break: break-all; }
+.account-disclosure, .account-storage-note { font-size: 25rpx; line-height: 1.75; color: var(--sub); word-break: break-all; }
+.account-disclosure { margin-top: 24rpx; }
+.account-storage-note { margin: 28rpx 4rpx; }
+.account-service { min-height: 88rpx; display: flex; align-items: center; justify-content: center; color: var(--cinnabar-deep); font-size: 26rpx; }

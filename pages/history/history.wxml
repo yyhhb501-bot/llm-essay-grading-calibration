@@ -1,0 +1,59 @@
+<!-- pages/history/history.wxml —— 批改与对话历史 -->
+<view class="page">
+
+  <!-- 筛选 -->
+  <view class="filter-bar">
+    <view
+      class="filter-item {{filter === item.key ? 'filter-active' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onFilterTap">{{item.label}}</view>
+    <view class="flex-1"></view>
+    <text wx:if="{{total > 0}}" class="muted total" bindtap="onClearAll">清空（{{total}}）</text>
+  </view>
+
+  <!-- 空态 -->
+  <view wx:if="{{empty}}" class="empty">
+    <view class="empty-title">
+      {{filter === 'grade' ? '还没有批改记录' : (filter === 'chat' ? '还没有对话记录' : '还没有任何记录')}}
+    </view>
+    <view class="empty-sub">
+      {{filter === 'chat' ? '去「解题」问一句，看看名师怎么讲这道题。' : '批改过的申论会自动保存在本机，随时回看。'}}
+    </view>
+    <view class="empty-actions">
+      <button wx:if="{{filter !== 'chat'}}" class="btn-primary empty-btn" bindtap="onGoGrade">去写第一篇</button>
+      <button wx:if="{{filter === 'chat'}}" class="btn-primary empty-btn" bindtap="onGoChat">去解题</button>
+    </view>
+  </view>
+
+  <!-- 列表 -->
+  <view wx:else>
+    <view
+      class="card item {{item.type === 'chat' ? 'item-chat' : 'item-grade'}}"
+      wx:for="{{list}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      data-type="{{item.type}}"
+      data-title="{{item.title}}"
+      bindtap="onItemTap"
+      bindlongpress="onItemLongPress">
+      <view class="row-between head">
+        <text class="title flex-1">{{item.title}}</text>
+        <view class="row">
+          <text wx:if="{{item.scoreText}}" class="history-score-badge">{{item.scoreText}}</text>
+          <text class="tag">{{item.typeLabel}}</text>
+        </view>
+      </view>
+      <view class="summary">{{item.summary}}</view>
+      <view class="row-between foot">
+        <text class="muted time">{{item.fullTime}}</text>
+        <text class="muted rel">{{item.timeText}}</text>
+      </view>
+    </view>
+    <view class="muted tip">长按单条记录可删除，点击可回看详情。</view>
+  </view>
+
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

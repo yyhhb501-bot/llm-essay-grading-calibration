@@ -1,0 +1,219 @@
+/* pages/grade/grade.wxss —— 智能批改页样式 */
+
+.tip-card {
+  border-left: 6rpx solid var(--cinnabar);
+  background-color: #FFFFFF;
+}
+
+.tip-desc {
+  font-size: 26rpx;
+  color: var(--sub);
+  line-height: 1.6;
+  margin-top: 10rpx;
+}
+
+.tip-btn {
+  margin-top: 18rpx;
+  height: 76rpx;
+  font-size: 28rpx;
+  border-radius: 14rpx;
+}
+
+/* 预填提示卡 */
+.preset-card {
+  background-color: var(--card);
+  border: 1rpx solid rgba(255, 107, 53, 0.2);
+  padding: 22rpx 24rpx;
+}
+
+.preset-tag {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: var(--cinnabar);
+  background-color: var(--cinnabar-soft);
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+}
+
+.preset-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 8rpx;
+  line-height: 1.4;
+}
+
+/* 题型选择器 */
+.picker-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #F8F9FA;
+  border: 1rpx solid var(--line);
+  border-radius: 14rpx;
+  padding: 18rpx 22rpx;
+  transition: all 0.15s ease;
+}
+
+.picker-value {
+  font-size: 29rpx;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.picker-arrow {
+  font-size: 24rpx;
+  color: var(--cinnabar);
+  font-weight: 500;
+}
+
+/* 输入区高度规划 */
+.ta {
+  width: 100%;
+  font-size: 28.5rpx;
+  line-height: 1.75;
+  box-sizing: border-box;
+}
+
+.ta-question {
+  min-height: 150rpx;
+}
+
+.ta-material {
+  min-height: 240rpx;
+}
+
+.ta-reference {
+  min-height: 180rpx;
+}
+
+.ta-answer {
+  min-height: 420rpx;
+  font-size: 29rpx;
+  line-height: 1.85;
+}
+
+/* 我的作答头部 */
+.answer-head {
+  margin-bottom: 14rpx;
+}
+
+.ml-s {
+  margin-left: 10rpx;
+}
+
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+
+/* 拍照识别小按钮 */
+.photo-btn {
+  height: 60rpx;
+  padding: 0 22rpx;
+  margin: 0;
+  font-size: 24rpx;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  background-color: var(--cinnabar-soft);
+  color: var(--cinnabar);
+  border: 1rpx solid var(--cinnabar-border);
+}
+
+.photo-btn::after {
+  border: none;
+}
+
+.photo-btn:active {
+  background-color: #FFE6D9;
+}
+
+/* 识别状态提示 */
+.scan-status {
+  margin: 10rpx 0 14rpx;
+  color: var(--cinnabar);
+  font-size: 24rpx;
+}
+
+.scan-err-box {
+  margin: 14rpx 0 18rpx;
+  padding: 16rpx 20rpx;
+  background-color: var(--cinnabar-soft);
+  border-left: 5rpx solid var(--cinnabar);
+  border-radius: 0 10rpx 10rpx 0;
+}
+
+.scan-err-title {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: var(--cinnabar);
+  margin-bottom: 4rpx;
+}
+
+.scan-msg {
+  margin: 0;
+  font-size: 25rpx;
+  border-left: none;
+  background: transparent;
+  padding: 0;
+  color: var(--ink);
+}
+
+/* 实时字数行 */
+.count-row {
+  margin-top: 14rpx;
+  padding-top: 10rpx;
+  border-top: 1rpx solid var(--line-light);
+}
+
+.length-hint {
+  font-size: 23rpx;
+  color: var(--muted);
+  margin-top: 0;
+}
+
+.count-badge {
+  display: flex;
+  align-items: baseline;
+  background-color: var(--line-light);
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.count-num {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: -apple-system, "DIN Alternate", sans-serif;
+}
+
+.count-unit {
+  font-size: 21rpx;
+  color: var(--sub);
+  margin-left: 4rpx;
+}
+
+/* 提交区 */
+.submit-wrap {
+  margin: 28rpx 0 16rpx;
+}
+
+.btn-submit {
+  height: 94rpx;
+  font-size: 32rpx;
+  letter-spacing: 0.5rpx;
+  border-radius: 16rpx;
+  margin-bottom: 14rpx;
+}
+
+.foot-note {
+  display: block;
+  text-align: center;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}

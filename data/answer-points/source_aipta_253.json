@@ -1,0 +1,86 @@
+{
+ "paperId": "source_aipta_253",
+ "title": "2020年国家公务员考试《申论》题（副省级）",
+ "year": 2020,
+ "region": "国考",
+ "extractedAt": "2026-10-11T10:26:33.047Z",
+ "done": true,
+ "note": [],
+ "questions": [
+  {
+   "no": "一",
+   "stem": "根据「给定资料1」，请你概括L省在人才的政治引领方面的主要举措。(10分)。要求：全面、准确、有条理。不超过200字。",
+   "score": 10,
+   "type": "归纳概括",
+   "materialRange": "给定资料1",
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2020国考申论真题解析（副省级）",
+    "url": "https://zhuanlan.zhihu.com/p/94099569",
+    "batchFile": "zhihu-batch6-2020.json",
+    "author": ""
+   }
+  },
+  {
+   "no": "二",
+   "stem": "「给定资料2」中，M农场的案例为新时代青年创业提供了哪些启示?(15分)。要求：分析全面,条理清晰。不超过300字。",
+   "score": 15,
+   "type": "综合分析",
+   "materialRange": "给定资料2",
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2020国考申论真题解析（副省级）",
+    "url": "https://zhuanlan.zhihu.com/p/94099569",
+    "batchFile": "zhihu-batch6-2020.json",
+    "author": ""
+   }
+  },
+  {
+   "no": "三",
+   "stem": "假设你是队长小陈，请根据「给定资料3」提供的调查日志内容，拟定脱贫攻坚队下一步工作的主要任务及措施。(20分)。要求：要点完整，措施具体，条理清晰。不超过500字。",
+   "score": 20,
+   "type": "提出对策",
+   "materialRange": "给定资料3",
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2020国考申论真题解析（副省级）",
+    "url": "https://zhuanlan.zhihu.com/p/94099569",
+    "batchFile": "zhihu-batch6-2020.json",
+    "author": ""
+   }
+  },
+  {
+   "no": "四",
+   "stem": "调研结束后，共青团H省委拟起草一份关于促进快递配送从业青年职业发展和社会融入的调研报告。假设你是该调研组成员，请根据「给定资料4」，撰写调研报告中「问题」与「建议」这两部分内容的提纲。(25分)。要求：(1) 问题梳理全面、准确；(2) 所提建议有针对性、切实可行；(3) 不超过500字。",
+   "score": 25,
+   "type": "公文写作",
+   "materialRange": "给定资料4",
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2020国考申论真题解析（副省级）",
+    "url": "https://zhuanlan.zhihu.com/p/94099569",
+    "batchFile": "zhihu-batch6-2020.json",
+    "author": ""
+   }
+  },
+  {
+   "no": "五",
+   "stem": "假设你是S省省委人才发展局的工作人员，请根据「给定资料5」，以「海纳百川聚四方之才」为题，为S省省委人才发展局有关负责人撰写宣讲会上的推介讲话稿。(30分)。要求：(1) 角色定位准确；(2) 内容切合主题；(3) 语言流畅，有感染力；(4) 字数800~1000字。",
+   "score": 30,
+   "type": "公文写作",
+   "materialRange": "给定资料5",
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2020国考申论真题解析（副省级）",
+    "url": "https://zhuanlan.zhihu.com/p/94099569",
+    "batchFile": "zhihu-batch6-2020.json",
+    "author": ""
+   }
+  }
+ ]
+}

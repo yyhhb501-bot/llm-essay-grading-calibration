@@ -1,0 +1,117 @@
+<!-- pages/chat/chat.wxml —— 解题陪练聊天页 -->
+<view class="chat-page">
+
+  <!-- 顶部：标题栏 + 快捷指令 chips -->
+  <view class="chat-head">
+    <view class="chat-head-row">
+      <view class="chat-head-left">
+        <text class="chat-head-title">解题陪练</text>
+        <text class="chat-head-sub">AI 申论解题方法随时问</text>
+      </view>
+      <view class="btn-mini" bindtap="onNewChat">新对话</view>
+    </view>
+
+    <scroll-view class="chips-bar" scroll-x="{{true}}" show-scrollbar="{{false}}" enable-flex="{{true}}">
+      <view class="chip" wx:for="{{quickAsks}}" wx:key="*this"
+            data-text="{{item}}" bindtap="onChipTap">{{item}}</view>
+    </scroll-view>
+  </view>
+
+  <!-- 历史回看提示条 -->
+  <view class="readonly-bar" wx:if="{{readonly}}">
+    <text class="readonly-text">正在回看历史对话（只读）</text>
+    <view class="readonly-btn" bindtap="onContinueChat">继续这段对话</view>
+  </view>
+
+  <!-- 消息流 -->
+  <scroll-view class="msg-scroll {{readonly ? 'msg-scroll-full' : ''}}"
+               scroll-y="{{true}}"
+               scroll-with-animation="{{true}}"
+               scroll-into-view="{{scrollIntoView}}">
+    <view class="msg-list">
+
+      <!-- 空态 -->
+      <view class="empty" wx:if="{{!messages.length}}">
+        <view class="empty-title">还没有开始对话</view>
+        <view class="empty-sub">点上面的快捷指令，或在下方输入申论困惑直接提问</view>
+      </view>
+
+      <block wx:for="{{messages}}" wx:key="id">
+        <view class="msg-row {{item.role === 'user' ? 'row-user' : 'row-ai'}}">
+
+          <!-- 用户气泡：右侧珊瑚橙浅底 -->
+          <view wx:if="{{item.role === 'user'}}" class="bubble bubble-user"
+                data-index="{{index}}" bindlongpress="onLongPressMsg">
+            <text class="bubble-user-text">{{item.text}}</text>
+            <text class="bubble-time">{{item.timeStr}}</text>
+          </view>
+
+          <!-- AI 气泡：左侧纯白卡片 + Markdown 结构化 -->
+          <view wx:else class="bubble bubble-ai"
+                data-index="{{index}}" bindlongpress="onLongPressMsg">
+            <text class="ai-name">AI 解题陪练 · 实时生成</text>
+            <block wx:for="{{item.blocks}}" wx:for-item="blk" wx:key="key">
+              <view wx:if="{{blk.type === 'h2'}}" class="md-h2">{{blk.text}}</view>
+              <view wx:elif="{{blk.type === 'h3'}}" class="md-h3">{{blk.text}}</view>
+              <view wx:elif="{{blk.type === 'quote'}}" class="quote-red">{{blk.text}}</view>
+              <view wx:elif="{{blk.type === 'hr'}}" class="md-hr"></view>
+              <view wx:elif="{{blk.type === 'li'}}" class="md-li">
+                <text wx:for="{{blk.segments}}" wx:for-item="seg" wx:key="key"
+                      class="{{seg.bold ? 'md-bold' : ''}}">{{seg.text}}</text>
+              </view>
+              <view wx:else class="md-p">
+                <text wx:for="{{blk.segments}}" wx:for-item="seg" wx:key="key"
+                      class="{{seg.bold ? 'md-bold' : ''}}">{{seg.text}}</text>
+              </view>
+            </block>
+            <view wx:if="{{item.streaming}}" class="typing-caret"></view>
+            <text class="bubble-time">{{item.timeStr}}</text>
+          </view>
+
+        </view>
+      </block>
+
+      <!-- 打字指示 -->
+      <view class="typing-tip" wx:if="{{sending && messages.length}}">
+        <view class="typing-dot"></view>
+        <view class="typing-dot"></view>
+        <view class="typing-dot"></view>
+        <text class="typing-text">AI 陪练正在解答…</text>
+      </view>
+
+      <!-- 错误卡 -->
+      <view class="error-card" wx:if="{{errorText}}">
+        <view class="error-title">本次回答中断</view>
+        <view class="error-text">{{errorText}}</view>
+        <view class="error-actions">
+          <view class="error-btn error-btn-primary" bindtap="onRetry" wx:if="{{!readonly}}">重试</view>
+          <view class="error-btn" bindtap="onGoSettings">去设置模型</view>
+        </view>
+      </view>
+
+      <!-- 滚底锚点 -->
+      <view id="msg-bottom" class="msg-bottom"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部固定输入区 -->
+  <view class="bottom-bar chat-dock" wx:if="{{!readonly}}">
+    <view class="dock-row">
+      <textarea class="input-box dock-input"
+                value="{{inputText}}"
+                placeholder="在此输入问题，例如：归纳概括找点怎么避免漏点"
+                placeholder-class="dock-placeholder"
+                maxlength="-1"
+                auto-height="{{true}}"
+                disabled="{{sending}}"
+                bindinput="onInput"
+                cursor-spacing="24"></textarea>
+      <view class="send-btn {{sending || !inputText ? 'send-btn-off' : ''}}" bindtap="onSendTap">
+        {{sending ? '作答中' : '发送'}}
+      </view>
+    </view>
+    <text class="dock-hint">长按消息可复制全文 · AI 生成内容仅供学习参考</text>
+  </view>
+
+</view>
+<privacy-dialog id="privacy-dialog" />

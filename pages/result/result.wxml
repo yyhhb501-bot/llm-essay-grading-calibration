@@ -1,0 +1,167 @@
+<!-- pages/result/result.wxml —— 批改报告页 -->
+<view class="page">
+
+  <!-- 记录不存在 -->
+  <view wx:if="{{ready && missing}}" class="card">
+    <view class="card-title">未找到本次批改记录</view>
+    <view class="muted">该记录可能已被删除或重置。请回到批改页重新提交作答。</view>
+    <button class="btn-primary mt-m" bindtap="onGradeAnother">去批改</button>
+  </view>
+
+  <block wx:elif="{{ready}}">
+    <!-- 免责说明标签条 -->
+    <view class="disclaimer-strip">
+      <text class="disclaimer-text">AI 辅助批改报告 · 结果仅供学习参考，正式成绩以官方评分为准</text>
+    </view>
+
+    <!-- 未配置模型引导 -->
+    <view wx:if="{{needConfig}}" class="card tip-card">
+      <view class="card-title no-margin">还没有配置模型</view>
+      <view class="tip-desc">本次批改需要调用你填写的模型 API，请先到设置页完成接口地址、密钥与模型名配置。</view>
+      <button class="btn-ghost tip-btn" bindtap="goSettings">去设置</button>
+    </view>
+
+    <!-- 头部信息卡 -->
+    <view class="card head-card">
+      <view class="row-between">
+        <text class="head-type">{{typeName}}</text>
+        <text class="head-time">{{timeText}}</text>
+      </view>
+      <view class="head-title">{{title}}</view>
+      <view class="row-between head-meta">
+        <text class="muted">报告约 {{charCount}} 字</text>
+        <view class="link-toggle" bindtap="onTogglePaper">
+          <text class="link-text">{{showPaper ? '收起题目与作答' : '查看原题与作答'}}</text>
+          <text class="link-arrow {{showPaper ? 'arrow-up' : ''}}"></text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 原题与作答展开抽屉 -->
+    <view wx:if="{{showPaper}}" class="card paper-card">
+      <view class="card-title">原卷与作答比对</view>
+      <view class="field">
+        <text class="field-label">题目要求</text>
+        <scroll-view scroll-y class="pre-text-scroll"><text class="pre-text">{{paper.question}}</text></scroll-view>
+      </view>
+      <view wx:if="{{paper.material}}" class="field">
+        <text class="field-label">给定资料</text>
+        <scroll-view scroll-y class="pre-text-scroll"><text class="pre-text">{{paper.material}}</text></scroll-view>
+      </view>
+      <view class="field">
+        <text wx:if="{{paper.referenceAnswer}}" class="field-label">参考答案（用户提供）</text>
+        <scroll-view wx:if="{{paper.referenceAnswer}}" scroll-y class="pre-text-scroll"><text class="pre-text">{{paper.referenceAnswer}}</text></scroll-view>
+        <text class="field-label">考生作答原文</text>
+        <scroll-view scroll-y class="pre-text-scroll"><text class="pre-text">{{paper.answer}}</text></scroll-view>
+      </view>
+    </view>
+
+    <!-- 分数与五维指数卡 -->
+    <view class="card score-card">
+      <view class="card-title">五维训练指数（非官方成绩）</view>
+      <view wx:if="{{hasScore}}" class="row-between score-row">
+        <view class="score-left">
+          <text class="score-num">{{totalText}}</text>
+          <text class="score-max">/ 100 分</text>
+        </view>
+        <text wx:if="{{gradeLabel}}" class="grade-badge">{{gradeLabel}}</text>
+      </view>
+      <view wx:else class="muted score-empty-hint">
+        {{streaming ? 'AI 先生正在逐项推导评分中…' : '本次批改未包含结构化得分，请参阅下方逐条朱批与改写建议'}}
+      </view>
+
+      <view wx:if="{{dimensions.length}}" class="dim-list">
+        <view wx:for="{{dimensions}}" wx:key="key" class="dim-item">
+          <view class="row-between dim-header">
+            <text class="dim-name">{{item.name}}</text>
+            <text class="dim-score">{{item.scoreText}} / {{item.max}}</text>
+          </view>
+          <view class="bar-track">
+            <view class="bar-fill {{item.percent >= 80 ? 'bar-fill-gold' : ''}}" style="width: {{item.percent}}%;"></view>
+          </view>
+          <text wx:if="{{item.comment}}" class="dim-comment">{{item.comment}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 流式错误卡 + 重试 -->
+    <view wx:if="{{errorMsg}}" class="card err-card">
+      <view class="card-title no-margin">批改未完全结束</view>
+      <view class="err-msg">{{errorMsg}}</view>
+      <button class="btn-primary" bindtap="onRetry">重试批改</button>
+    </view>
+
+    <!-- 报告内容分栏导航 -->
+    <view class="report-tabs">
+      <view class="report-tab {{reportTab === 'all' ? 'report-tab-active' : ''}}" data-tab="all" bindtap="onReportTab">
+        批改总览
+      </view>
+      <view wx:if="{{issues.length}}" class="report-tab {{reportTab === 'issues' ? 'report-tab-active' : ''}}" data-tab="issues" bindtap="onReportTab">
+        逐条朱批（{{issues.length}}）
+      </view>
+      <view wx:if="{{upgrade}}" class="report-tab {{reportTab === 'upgrade' ? 'report-tab-active' : ''}}" data-tab="upgrade" bindtap="onReportTab">
+        升格示范
+      </view>
+    </view>
+
+    <!-- 批改报告正文（Markdown 结构化渲染） -->
+    <view wx:if="{{reportTab === 'all'}}" class="card">
+      <view class="row-between md-header">
+        <view class="card-title no-margin">批改报告全文</view>
+        <text wx:if="{{streaming}}" class="streaming-tip">先生正在逐句推敲…</text>
+      </view>
+      <view wx:if="{{blocks.length}}" class="md-body">
+        <block wx:for="{{blocks}}" wx:key="key" wx:for-item="blk">
+          <view wx:if="{{blk.type === 'h2'}}" class="md-h2">{{blk.text}}</view>
+          <view wx:elif="{{blk.type === 'h3'}}" class="md-h3">{{blk.text}}</view>
+          <view wx:elif="{{blk.type === 'li'}}" class="md-li">
+            <text wx:for="{{blk.segments}}" wx:key="key" wx:for-item="seg" class="{{seg.bold ? 'bold' : ''}}">{{seg.text}}</text>
+          </view>
+          <view wx:elif="{{blk.type === 'oli'}}" class="md-oli">
+            <text class="md-oli-num">{{blk.order}}.</text>
+            <text wx:for="{{blk.segments}}" wx:key="key" wx:for-item="seg" class="{{seg.bold ? 'bold' : ''}}">{{seg.text}}</text>
+          </view>
+          <view wx:elif="{{blk.type === 'quote'}}" class="md-quote">
+            <text wx:for="{{blk.segments}}" wx:key="key" wx:for-item="seg" class="{{seg.bold ? 'bold' : ''}}">{{seg.text}}</text>
+          </view>
+          <view wx:elif="{{blk.type === 'hr'}}" class="md-hr"></view>
+          <view wx:else class="md-p">
+            <text wx:for="{{blk.segments}}" wx:key="key" wx:for-item="seg" class="{{seg.bold ? 'bold' : ''}}">{{seg.text}}</text>
+          </view>
+        </block>
+      </view>
+      <view wx:elif="{{streaming}}" class="muted py-m">正在接收先生的批改红笔，请稍候…</view>
+      <view wx:else class="muted py-m">暂无正文内容，可点上方重试。</view>
+    </view>
+
+    <!-- 逐条朱批拆解 -->
+    <view wx:if="{{reportTab === 'issues' && issues.length}}" class="card">
+      <view class="card-title">逐条朱批诊断（共 {{issues.length}} 处）</view>
+      <view wx:for="{{issues}}" wx:key="key" class="issue-item">
+        <view wx:if="{{item.quote}}" class="quote-red issue-quote">{{item.quote}}</view>
+        <view class="issue-head">
+          <text class="issue-tag {{item.tagClass}}">{{item.type}}</text>
+          <text class="issue-comment">{{item.comment}}</text>
+        </view>
+        <view wx:if="{{item.suggestion}}" class="issue-sug">建议：{{item.suggestion}}</view>
+      </view>
+    </view>
+
+    <!-- 升格示范 -->
+    <view wx:if="{{reportTab === 'upgrade' && upgrade}}" class="card">
+      <view class="card-title">名师升格示范</view>
+      <view class="upgrade-body">{{upgrade}}</view>
+    </view>
+
+    <!-- 底部操作按钮 -->
+    <view class="foot-actions">
+      <button class="btn-ghost" bindtap="onCopy">复制报告</button>
+      <button class="btn-primary" bindtap="onGradeAnother">再批一篇</button>
+    </view>
+    <view class="muted foot-note">AI 批改仅供学习参考，正式成绩以官方评分为准。</view>
+    <view class="safe-bottom"></view>
+  </block>
+
+  <view wx:else class="empty">正在读取批改记录…</view>
+</view>
+<privacy-dialog id="privacy-dialog" />

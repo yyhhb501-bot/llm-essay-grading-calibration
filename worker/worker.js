@@ -22,6 +22,10 @@
  *   ZHIPU_API_KEY  服务端模式的智谱密钥
  */
 
+import { createAuth } from '../server/auth.mjs';
+import { servePracticePaper } from '../server/paper-library.mjs';
+import { adminOverview } from '../server/admin.mjs';
+
 export default {
   /**
    * @param {Request} request
@@ -31,6 +35,18 @@ export default {
    */
   async fetch(request, env) {
     const url = new URL(request.url);
+    const auth = createAuth({
+      db: env && env.AUTH_DB,
+      getInviteCode: () => (env && (env.REGISTER_INVITE_CODE || env.ACCESS_CODE)) || ''
+    });
+    if (url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/acct/') || url.pathname.startsWith('/api/mp/auth/')) {
+      return auth.handle(request, { ip: request.headers.get('CF-Connecting-IP') || 'unknown', native: url.pathname.startsWith('/api/mp/auth/') });
+    }
+
+    if (url.pathname.startsWith('/api/mp/papers/')) {
+      return servePracticePaper(request, { auth, db: env && env.AUTH_DB });
+    }
+    if (url.pathname === '/api/admin/overview') return adminOverview(request, { auth, db: env && env.AUTH_DB });
 
     // ---- 部署验证 ----
     if (url.pathname === '/api/health') {
@@ -40,15 +56,20 @@ export default {
         ok: true,
         sharedReady: openCodeReady || zhipuReady,
         officialModel: openCodeReady ? 'OpenCode Go · DeepSeek V4.1 Flash' : 'GLM-5.3-Flash',
-        sharedProvider: openCodeReady ? 'opencode-go' : (zhipuReady ? 'zhipu' : '')
+        sharedProvider: openCodeReady ? 'opencode-go' : (zhipuReady ? 'zhipu' : ''),
+        authRequired: true,
+        authReady: !!(env && env.AUTH_DB),
+        registrationReady: auth.registrationReady()
       });
     }
 
     // ---- 模型转发 ----
-    if (url.pathname === '/api/chat') {
+    if (url.pathname === '/api/chat' || url.pathname === '/api/mp/chat') {
       if (request.method !== 'POST') {
         return json({ error: '请求方法不对，/api/chat 只接受 POST。' }, 405);
       }
+      const authorization = await auth.authorize(request, { native: url.pathname === '/api/mp/chat' });
+      if (authorization.response) return authorization.response;
       return handleChat(request, env);
     }
 
@@ -72,15 +93,6 @@ function json(obj, status) {
       'Cache-Control': 'no-store'
     }
   });
-}
-
-/** 访问口令校验：口令正确返回 null，不正确返回一段中文说明 */
-function checkAccessCode(request, env) {
-  const expect = String((env && env.ACCESS_CODE) || '').trim();
-  if (!expect) return null; // 未配置口令时不校验（本地/自测场景）
-  const got = String(request.headers.get('X-Access-Code') || '').trim();
-  if (got !== expect) return '访问口令不正确，请向站主要一下口令后，在设置页重新填写。';
-  return null;
 }
 
 /**
@@ -133,11 +145,7 @@ function pickServerMessage(text) {
  * @returns {Promise<Response>}
  */
 async function handleChat(request, env) {
-  // 1. 口令
-  const codeError = checkAccessCode(request, env);
-  if (codeError) return json({ error: codeError }, 401);
-
-  // 2. 解析请求体
+  // Account session and same-origin checks have already passed in fetch().
   let body;
   try {
     body = await request.json();

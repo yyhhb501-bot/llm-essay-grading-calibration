@@ -1,0 +1,56 @@
+<view class="page account-page">
+  <view class="account-brand">作文批改大人</view>
+  <view class="account-subtitle">网站与小程序使用同一个账号</view>
+
+  <view class="card account-card">
+    <view class="account-title">{{mode === 'password' ? '修改密码' : (mode === 'register' ? '创建学习账号' : '欢迎回来')}}</view>
+    <view wx:if="{{mode !== 'password'}}" class="account-tabs">
+      <view class="account-tab {{mode === 'login' ? 'account-tab-active' : ''}}" data-mode="login" bindtap="onModeTap">登录</view>
+      <view class="account-tab {{mode === 'register' ? 'account-tab-active' : ''}}" data-mode="register" bindtap="onModeTap">注册</view>
+    </view>
+    <view wx:if="{{mode === 'password'}}" class="account-hint">当前账号：{{accountName}}。修改后其他已登录设备需要重新登录。</view>
+
+    <block wx:if="{{mode !== 'password'}}">
+      <view class="field">
+        <text class="field-label">用户名</text>
+        <input class="input-box" value="{{username}}" bindinput="onUsernameInput" maxlength="48" disabled="{{busy}}" placeholder="输入你的用户名" />
+        <text wx:if="{{mode === 'register'}}" class="field-hint">3–24 位中文、字母、数字、下划线或短横线</text>
+      </view>
+      <view class="field">
+        <text class="field-label">密码</text>
+        <input class="input-box" password="{{true}}" value="{{password}}" bindinput="onPasswordInput" maxlength="128" disabled="{{busy}}" placeholder="8–128 个字符" />
+      </view>
+      <block wx:if="{{mode === 'register'}}">
+        <view class="field">
+          <text class="field-label">确认密码</text>
+          <input class="input-box" password="{{true}}" value="{{confirmPassword}}" bindinput="onConfirmPasswordInput" maxlength="128" disabled="{{busy}}" placeholder="再次输入密码" />
+        </view>
+        <view class="field">
+          <text class="field-label">注册邀请码</text>
+          <input class="input-box" password="{{true}}" value="{{inviteCode}}" bindinput="onInviteInput" maxlength="256" disabled="{{busy}}" placeholder="填写站主提供的邀请码" />
+          <text class="field-hint">仅注册时需要，已有账号直接登录。</text>
+        </view>
+      </block>
+    </block>
+    <block wx:else>
+      <view class="field">
+        <text class="field-label">当前密码</text>
+        <input class="input-box" password="{{true}}" value="{{oldPassword}}" bindinput="onOldPasswordInput" maxlength="128" disabled="{{busy}}" placeholder="输入当前密码" />
+      </view>
+      <view class="field">
+        <text class="field-label">新密码</text>
+        <input class="input-box" password="{{true}}" value="{{newPassword}}" bindinput="onNewPasswordInput" maxlength="128" disabled="{{busy}}" placeholder="8–128 个字符" />
+      </view>
+    </block>
+
+    <view wx:if="{{errorMsg}}" class="account-error">{{errorMsg}}</view>
+    <button class="btn-primary" bindtap="onSubmit" disabled="{{busy}}" loading="{{busy}}">{{busy ? '正在处理…' : (mode === 'password' ? '保存新密码' : (mode === 'register' ? '注册并登录' : '登录'))}}</button>
+    <view class="account-disclosure">账号凭据将通过 HTTPS 发送至 shenlundawang.asia，用于注册、登录或修改密码；密码与邀请码不保存在本机。</view>
+  </view>
+
+  <view class="account-storage-note">登录后可使用站点共享模型，也可配置自己的 API Key。各账号的历史、计划和模型配置在本机分别保存，暂不跨设备同步。原未登录记录保留在本机模式，不会自动归入账号。</view>
+  <button class="btn-ghost" bindtap="onGoLocal" disabled="{{busy}}">{{authenticated ? '返回我的' : '暂不登录，使用本机模式'}}</button>
+  <view class="account-service" bindtap="onGoService">查看服务与隐私说明</view>
+  <view class="safe-bottom"></view>
+</view>
+<privacy-dialog id="privacy-dialog" />

@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS practice_papers (
+  id TEXT PRIMARY KEY,
+  sha256 TEXT NOT NULL,
+  body TEXT NOT NULL
+);

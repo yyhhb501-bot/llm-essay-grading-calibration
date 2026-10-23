@@ -1,0 +1,41 @@
+{
+ "paperId": "source_1780125183750",
+ "title": "2026年上海市公考《申论》题",
+ "year": 2026,
+ "region": "上海",
+ "extractedAt": "2026-10-11T10:40:36.082Z",
+ "done": true,
+ "note": [],
+ "questions": [
+  {
+   "no": "第1题",
+   "stem": "结合给定资料，阐述如何理解「跳出上海看上海」的定位，并界定「全球资源配置功能」的内涵。要求：阐述规范扼要，表达准确到位，字数不超过200字。",
+   "score": null,
+   "type": "综合分析",
+   "materialRange": null,
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2026和历年上海市公务员考试《申论》+《职测》真题及答案54套",
+    "url": "https://zhuanlan.zhihu.com/p/46656595",
+    "batchFile": "zhihu-s11-shanghai.json",
+    "author": ""
+   }
+  },
+  {
+   "no": "第2题",
+   "stem": "上海的高质量发展与全国其他地区有很多共性，但作为中国最大的经济中心城市，上海高质量发展又有一些个性特征。结合给定资料，论述上海高质量发展的个性特征和共性特征。要求：语言精练，层次要点分明，字数不超过300字。",
+   "score": null,
+   "type": "综合分析",
+   "materialRange": null,
+   "rubric": null,
+   "institutionAnswers": [],
+   "sourceArticle": {
+    "title": "2026和历年上海市公务员考试《申论》+《职测》真题及答案54套",
+    "url": "https://zhuanlan.zhihu.com/p/46656595",
+    "batchFile": "zhihu-s11-shanghai.json",
+    "author": ""
+   }
+  }
+ ]
+}

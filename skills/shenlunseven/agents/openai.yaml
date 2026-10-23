@@ -1,0 +1,4 @@
+interface:
+  display_name: "shenlun-mingshi"
+  short_description: "Use this verified ViceMe Skill edition"
+  default_prompt: "Use $shenlun-mingshi to continue the current task."

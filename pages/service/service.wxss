@@ -1,0 +1,18 @@
+/* pages/service/service.wxss —— 服务与隐私说明页 */
+
+.paragraph {
+  font-size: 28rpx;
+  color: var(--ink-sub);
+  line-height: 1.8;
+  margin-bottom: 20rpx;
+  overflow-wrap: break-word;
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.btn-ghost {
+  margin-top: 28rpx;
+  margin-bottom: 8rpx;
+}

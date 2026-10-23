@@ -3,7 +3,7 @@
 # 用法（在 worker/ 目录下执行）：
 #   npm install -g wrangler
 #   wrangler login
-#   wrangler secret put ACCESS_CODE      # 访问口令，发给朋友
+#   wrangler secret put ACCESS_CODE      # 兼容原共享口令，现仅用作注册邀请码
 #   wrangler secret put ZHIPU_API_KEY    # 你的智谱 API Key
 #   wrangler deploy
 #
@@ -11,14 +11,22 @@
 # Worker 里通过 env.ASSETS.fetch(request) 兜底服务（见 worker.js）。
 
 name = "shenlun-zhupi"
+account_id = "9da402a8f865bfde1fdd12304cd70fee"
 main = "worker.js"
 compatibility_date = "2024-09-23"
+
+# Worker routes belong at the top level, outside [assets].
+routes = [
+  { pattern = "shenlundawang.asia", custom_domain = true }
+]
 
 [assets]
 directory = "../site"
 binding = "ASSETS"
 
-# 自定义域名：workers.dev 在大陆被 DNS 污染，用自有域名访问（域名在账号下已 active）
-routes = [
-  { pattern = "shenlundawang.asia", custom_domain = true }
-]
+# 独立账号库；原模型 Secret 仍保留在 Worker 中。
+[[d1_databases]]
+binding = "AUTH_DB"
+database_name = "shenlun-accounts"
+database_id = "877b8bd2-91a5-4ef4-8754-f3dcbfdda14a"
+migrations_dir = "migrations"

@@ -1,0 +1,255 @@
+{
+  "scope": "Offline structural audit; original-source textual completeness not certified",
+  "catalog": 380,
+  "papers": 371,
+  "materials": 1855,
+  "questions": 1414,
+  "missingScores": [
+    {
+      "paperId": "source_1758335702535",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1695900052606",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1678839703899",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1678839703899",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1678839703899",
+      "questionIndex": 2,
+      "questionNo": "三"
+    },
+    {
+      "paperId": "source_1695900053108",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1695900053108",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1695900053108",
+      "questionIndex": 2,
+      "questionNo": "三"
+    },
+    {
+      "paperId": "source_1695900053108",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1695900053308",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1691414157791",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1678839704120",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1678839704120",
+      "questionIndex": 4,
+      "questionNo": "五"
+    },
+    {
+      "paperId": "source_1691414158694",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1659959412956",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1659959412956",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1640265343995",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1640265343995",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1706852966944",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1699505307785",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1699505307785",
+      "questionIndex": 5,
+      "questionNo": "六"
+    },
+    {
+      "paperId": "source_1699505307886",
+      "questionIndex": 2,
+      "questionNo": "三"
+    },
+    {
+      "paperId": "source_1699505307886",
+      "questionIndex": 4,
+      "questionNo": "五"
+    },
+    {
+      "paperId": "source_1629723801202",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1629723801202",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1629723801202",
+      "questionIndex": 2,
+      "questionNo": "三"
+    },
+    {
+      "paperId": "source_1629723801202",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1629723801309",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1629723801309",
+      "questionIndex": 2,
+      "questionNo": "三"
+    },
+    {
+      "paperId": "source_1629723801525",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1629723801525",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1629723801636",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1629723801636",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1629723802071",
+      "questionIndex": 1,
+      "questionNo": "二"
+    },
+    {
+      "paperId": "source_1629723802071",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1640265343543",
+      "questionIndex": 3,
+      "questionNo": "四"
+    },
+    {
+      "paperId": "source_1767342830855",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1699505307180",
+      "questionIndex": 0,
+      "questionNo": "一"
+    },
+    {
+      "paperId": "source_1699505307180",
+      "questionIndex": 2,
+      "questionNo": "三"
+    }
+  ],
+  "missingScoreCount": 39,
+  "excluded": [
+    {
+      "id": "source_1714363788893",
+      "title": "2024年国家公务员考试《申论》卷（地市级）站友提供版",
+      "reason": "empty-materials-or-questions"
+    },
+    {
+      "id": "source_1714372792908",
+      "title": "2024年国家公务员考试《申论》卷（副省级）站友提供版",
+      "reason": "empty-materials-or-questions"
+    },
+    {
+      "id": "source_1714371320519",
+      "title": "2024年国家公务员考试《申论》卷（行政执法）站友提供版",
+      "reason": "empty-materials-or-questions"
+    },
+    {
+      "id": "source_aipta_256",
+      "title": "2021年国家公务员考试《申论》题（地市级）",
+      "reason": "missing-file"
+    },
+    {
+      "id": "source_aipta_255",
+      "title": "2021年国家公务员考试《申论》题（副省级）",
+      "reason": "missing-file"
+    },
+    {
+      "id": "source_huatu_1771004",
+      "title": "2020年福建公务员考试申论试题（县级卷）",
+      "reason": "missing-file"
+    },
+    {
+      "id": "source_huatu_1771006",
+      "title": "2020年福建公务员考试申论试题（乡镇卷）",
+      "reason": "missing-file"
+    },
+    {
+      "id": "source_aipta_254",
+      "title": "2020年国家公务员考试《申论》题（地市级）",
+      "reason": "missing-file"
+    },
+    {
+      "id": "source_aipta_253",
+      "title": "2020年国家公务员考试《申论》题（副省级）",
+      "reason": "missing-file"
+    }
+  ],
+  "siteCopyMismatches": [],
+  "recalled": 271,
+  "sourceBytes": 7675494
+}

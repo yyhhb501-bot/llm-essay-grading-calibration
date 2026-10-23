@@ -1,16 +1,14 @@
 /**
- * site/js/store.js —— localStorage 存储层（替代小程序的 wx.storage，方案-网站.md §2）
+ * site/js/store.js —— localStorage 存储层（替代小程序的 wx.storage，方案-网站.md §2 & docs/账号登录实施方案.md）
  *
- * key 命名沿用小程序版的 slz_ 前缀，历史记录同样「新的在前、封顶 50 条」：
- *   slz_config       接入配置 {mode, presetId, baseURL, apiKey, model, visionModel, accessCode}
- *   slz_history      历史记录数组（批改 grade / 对话 chat）
- *   slz_plan         备考计划 {form, content, checkins}
- *
- * mode 两种取值（方案 §1）：
- *   'server'  服务端模式 —— 朋友只填访问口令，Key 在 Worker 环境变量里；
- *   'selfkey' 自带 Key 模式 —— 朋友自己填 apiKey/baseURL，Worker 只做纯转发。
- *
- * 任何读写异常（隐私模式、配额满）都退化为默认值，绝不抛出。
+ * 账号隔离设计：
+ *   1. 网站运行（http:/https:）时，按当前登录用户的不可变 user.id 进行命名空间隔离：
+ *      slz_u_<userId>_config   当前账号接入配置
+ *      slz_u_<userId>_history  当前账号历史记录（最多 50 条）
+ *      slz_u_<userId>_plan     当前账号备考计划与打卡
+ *   2. 既有未归属账号的原始 slz_* 键完整保留，绝不静默迁移或覆盖；
+ *   3. 未登录状态下所有读取均返回安全的空白默认值，不读取或污染任何账号数据；
+ *   4. 单文件离线运行（file: 协议）保持原有的全局存储模式，保证离线单机体验。
  */
 (function (root) {
   'use strict';
@@ -35,10 +33,40 @@
   };
 
   var DEFAULT_PLAN = { form: null, content: '', checkins: {} };
+  var boundUserId = null;
+
+  // Bind once per document. A session changing during an old stream must never
+  // redirect that stream's writes into the newly logged-in account.
+  function bindUser(id) {
+    if (boundUserId && boundUserId !== id) return false;
+    boundUserId = id || null;
+    return !!boundUserId;
+  }
 
   // ---- 内部工具 ----
 
+  function isWebsite() {
+    return typeof location !== 'undefined' && (location.protocol === 'http:' || location.protocol === 'https:');
+  }
+
+  /**
+   * 根据当前运行环境与登录状态获取隔离的存储键名
+   * @param {string} baseKey 原始基础键名（如 'slz_config'）
+   * @returns {string|null} 隔离后的键名；未登录网站返回 null
+   */
+  function getUserKey(baseKey) {
+    if (!isWebsite()) {
+      return baseKey; // 离线单机文件保持原键
+    }
+    var user = root.Auth && typeof root.Auth.getUser === 'function' ? root.Auth.getUser() : null;
+    if (!user || !user.id || user.id !== boundUserId) {
+      return null; // 未登录网站隔离返回空
+    }
+    return 'slz_u_' + user.id + '_' + baseKey.replace(/^slz_/, '');
+  }
+
   function safeGet(key, fallback) {
+    if (!key) return fallback;
     try {
       var v = root.localStorage.getItem(key);
       if (v === '' || v === null || v === undefined) return fallback;
@@ -49,6 +77,7 @@
   }
 
   function safeSet(key, value) {
+    if (!key) return false;
     try {
       root.localStorage.setItem(key, JSON.stringify(value));
       return true;
@@ -58,6 +87,7 @@
   }
 
   function safeRemove(key) {
+    if (!key) return false;
     try {
       root.localStorage.removeItem(key);
       return true;
@@ -90,7 +120,9 @@
 
   /** 读取接入配置，永不返回 null */
   function getConfig() {
-    var c = safeGet(KEYS.CONFIG, null);
+    var key = getUserKey(KEYS.CONFIG);
+    if (!key) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    var c = safeGet(key, null);
     var out = {};
     out.mode = (c && c.mode === 'selfkey') ? 'selfkey' : 'server';
     out.presetId = (c && c.presetId) || DEFAULT_CONFIG.presetId;
@@ -104,6 +136,8 @@
 
   /** 局部更新接入配置（只覆盖传入的字段） */
   function setConfig(patch) {
+    var key = getUserKey(KEYS.CONFIG);
+    if (!key) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
     var next = getConfig();
     var p = patch || {};
     if (p.mode !== undefined) next.mode = p.mode === 'selfkey' ? 'selfkey' : 'server';
@@ -113,28 +147,34 @@
     if (p.model !== undefined) next.model = String(p.model || '').trim();
     if (p.visionModel !== undefined) next.visionModel = String(p.visionModel || '').trim();
     if (p.accessCode !== undefined) next.accessCode = String(p.accessCode || '').trim();
-    safeSet(KEYS.CONFIG, next);
+    safeSet(key, next);
     return next;
   }
 
   function clearConfig() {
-    safeRemove(KEYS.CONFIG);
+    var key = getUserKey(KEYS.CONFIG);
+    if (key) safeRemove(key);
     return getConfig();
   }
 
-  /** 是否已经可以发请求：服务端模式只要口令，自带 Key 模式要三件套齐全 */
+  /** 是否已经可以发请求：网站端官方模型只需登录账号，自带 Key 模式要三件套齐全 */
   function isConfigured(cfg) {
     var c = cfg || getConfig();
     if (c.mode === 'selfkey') {
       return !!(c.baseURL && c.apiKey && c.model);
     }
-    return !!c.accessCode;
+    if (!isWebsite()) {
+      return !!c.accessCode;
+    }
+    return !!(root.Auth && typeof root.Auth.isAuthenticated === 'function' && root.Auth.isAuthenticated());
   }
 
   // ---- 历史记录 ----
 
   function getHistory() {
-    var h = safeGet(KEYS.HISTORY, []);
+    var key = getUserKey(KEYS.HISTORY);
+    if (!key) return [];
+    var h = safeGet(key, []);
     if (!Array.isArray(h)) return [];
     return h.map(normalizeItem);
   }
@@ -149,14 +189,17 @@
 
   /** 截断到上限并写回 */
   function persistHistory(list) {
+    var key = getUserKey(KEYS.HISTORY);
     var arr = Array.isArray(list) ? list.slice(0, HISTORY_LIMIT) : [];
-    safeSet(KEYS.HISTORY, arr);
+    if (key) safeSet(key, arr);
     return arr;
   }
 
   /** 新增一条历史（新的在前，超过 50 条自动丢弃最旧的） */
   function addHistory(item) {
     var entry = normalizeItem(item);
+    var key = getUserKey(KEYS.HISTORY);
+    if (!key) return entry;
     var list = getHistory();
     list.unshift(entry);
     persistHistory(list);
@@ -165,6 +208,8 @@
 
   /** 按 id 更新局部字段（流式写回批改正文时用） */
   function updateHistory(id, patch) {
+    var key = getUserKey(KEYS.HISTORY);
+    if (!key) return null;
     var list = getHistory();
     var p = patch || {};
     var hit = null;
@@ -186,6 +231,8 @@
   }
 
   function removeHistory(id) {
+    var key = getUserKey(KEYS.HISTORY);
+    if (!key) return [];
     var list = getHistory().filter(function (it) {
       return it.id !== id;
     });
@@ -194,7 +241,8 @@
   }
 
   function clearHistory() {
-    safeRemove(KEYS.HISTORY);
+    var key = getUserKey(KEYS.HISTORY);
+    if (key) safeRemove(key);
     return [];
   }
 
@@ -209,7 +257,9 @@
   // ---- 备考计划 ----
 
   function getPlan() {
-    var p = safeGet(KEYS.PLAN, null);
+    var key = getUserKey(KEYS.PLAN);
+    if (!key) return JSON.parse(JSON.stringify(DEFAULT_PLAN));
+    var p = safeGet(key, null);
     return {
       form: p && p.form ? p.form : null,
       content: (p && p.content) || '',
@@ -218,6 +268,8 @@
   }
 
   function setPlan(patch) {
+    var key = getUserKey(KEYS.PLAN);
+    if (!key) return JSON.parse(JSON.stringify(DEFAULT_PLAN));
     var cur = getPlan();
     var p = patch || {};
     if (p.form !== undefined) cur.form = p.form;
@@ -225,25 +277,30 @@
     if (p.checkins !== undefined) {
       cur.checkins = (p.checkins && typeof p.checkins === 'object') ? p.checkins : {};
     }
-    safeSet(KEYS.PLAN, cur);
+    safeSet(key, cur);
     return cur;
   }
 
   /** 某一周的打卡开关，返回打卡后的状态 */
   function toggleCheckin(week) {
+    var key = getUserKey(KEYS.PLAN);
+    if (!key) return false;
     var cur = getPlan();
-    var key = String(week);
-    cur.checkins[key] = !cur.checkins[key];
-    safeSet(KEYS.PLAN, cur);
-    return !!cur.checkins[key];
+    var k = String(week);
+    cur.checkins[k] = !cur.checkins[k];
+    safeSet(key, cur);
+    return !!cur.checkins[k];
   }
 
   /** 是否已有本地保存过的配置（区分「首次打开」与用户已自行设置过） */
   function hasStoredConfig() {
-    return safeGet(KEYS.CONFIG, null) !== null;
+    var key = getUserKey(KEYS.CONFIG);
+    if (!key) return false;
+    return safeGet(key, null) !== null;
   }
 
   root.Store = {
+    bindUser: bindUser,
     KEYS: KEYS,
     HISTORY_LIMIT: HISTORY_LIMIT,
     DEFAULT_CONFIG: DEFAULT_CONFIG,
