@@ -9,6 +9,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { createAuth } from '../server/auth.mjs';
+import { adminOverview } from '../server/admin.mjs';
 import worker from '../worker/worker.js';
 const require = createRequire(import.meta.url);
 const { openAuthDatabase } = require('../server/auth-local.cjs');
@@ -49,8 +50,18 @@ async function coreTests() {
     check('username is normalized', identity.username, 'alice');
     const aliceCookie = cookie(registered);
     check('cookie is HttpOnly, Secure and SameSite', /HttpOnly/.test(registered.headers.get('set-cookie')) && /; Secure/.test(registered.headers.get('set-cookie')) && /SameSite=Lax/.test(registered.headers.get('set-cookie')));
-    check('no token in JSON response', Object.keys(identity).sort(), ['id', 'username']);
+    check('no token in JSON response', Object.keys(identity).sort(), ['id', 'role', 'username']);
     check('duplicate normalized username', (await call('register', { username: 'Alice', password, inviteCode: 'invite-test' })).status, 409);
+    // Admin comes only from a server-side auth_user_roles row; no public route may grant it.
+    const promoted = await call('register', { username: 'selfpromoted', password, inviteCode: 'invite-test', role: 'admin' });
+    check('public registration cannot claim admin role', (await promoted.json()).user.role, 'member');
+    check('username admin does not grant admin role', (await (await call('register', { username: 'admin', password, inviteCode: 'invite-test' })).json()).user.role, 'member');
+    const memberOverview = await adminOverview(request('/api/admin/overview', undefined, { cookie: cookie(promoted) }), { auth, db });
+    check('member cannot access admin overview', memberOverview.status, 403);
+    check('member admin rejection code', (await memberOverview.json()).code, 'ADMIN_REQUIRED');
+    const root = await call('register', { username: 'rootuser', password, inviteCode: 'invite-test' });
+    raw.prepare('INSERT INTO auth_user_roles(user_id,role) VALUES(?,?)').run((await root.json()).user.id, 'admin');
+    check('server-granted admin reads overview', (await adminOverview(request('/api/admin/overview', undefined, { cookie: cookie(root) }), { auth, db })).status, 200);
     check('valid session', (await (await call('session', undefined, { cookie: aliceCookie })).json()).user.id, identity.id);
     const wrong = await call('login', { username: 'alice', password: 'wrong-pass' });
     const unknown = await call('login', { username: 'notfound', password: 'wrong-pass' });
@@ -117,6 +128,7 @@ async function workerTests() {
     const sessionCookie = cookie(registered);
     check('Worker session restored', (await (await call('/api/auth/session', undefined, { cookie: sessionCookie })).json()).authenticated);
     check('Worker chat CSRF rejected', (await call('/api/chat', {}, { cookie: sessionCookie, origin: 'https://evil.test' })).status, 403);
+    check('Worker admin overview rejects member session', (await call('/api/admin/overview', undefined, { cookie: sessionCookie })).status, 403);
     const originalFetch = globalThis.fetch;
     let upstreamCalls = 0;
     globalThis.fetch = async (url, init) => {
@@ -185,6 +197,7 @@ async function nodeHttpTests() {
     check('HTTP forwarded-origin spoof is rejected by default', (await call('/api/auth/login', { username: 'nodeuser', password }, { headers: { Origin: 'https://evil.test', 'X-Forwarded-Proto': 'https', Host: '127.0.0.1:' + port } })).status, 403);
     const model = await call('/api/chat', { messages: [{ role: 'user', content: 'test' }], stream: false }, { cookie: sessionCookie });
     check('HTTP logged-in model request reaches local stub', (await model.json()).choices[0].message.content, 'MOCK NODE RESULT');
+    check('HTTP admin overview rejects member session', (await call('/api/admin/overview', undefined, { cookie: sessionCookie })).status, 403);
     await stop(); await start();
     check('HTTP restart retains existing session', (await (await call('/api/auth/session', undefined, { cookie: sessionCookie })).json()).authenticated);
     await call('/api/auth/logout', {}, { cookie: sessionCookie });
