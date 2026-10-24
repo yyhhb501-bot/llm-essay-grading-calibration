@@ -29,7 +29,8 @@ var stream = require('stream');
 var crypto = require('crypto');
 
 var ROOT = __dirname;
-var SITE_DIR = path.join(ROOT, 'site');
+// SLZ_SITE_DIR 可把静态目录指到发布包快照（本地验收用；默认仍是仓库内 site/）
+var SITE_DIR = process.env.SLZ_SITE_DIR ? path.resolve(ROOT, process.env.SLZ_SITE_DIR) : path.join(ROOT, 'site');
 
 var PORT = Number(process.env.PORT || 8787);
 var HOST = String(process.env.HOST || '0.0.0.0');
