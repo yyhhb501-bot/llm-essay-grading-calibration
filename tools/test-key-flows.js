@@ -121,7 +121,7 @@ async function main() {
     ok('健康检查就绪（auth/shared/registration）', health && health.authReady && health.sharedReady && health.registrationReady);
 
     // ---- 账号与权限 ----
-    check('错误邀请码注册被拒（403）', (await call('/api/auth/register', { username: 'badinvite', password: 'flow password 8', inviteCode: 'wrong-code' })).status, 403);
+    ok('错误邀请码注册被拒（403）', (await call('/api/auth/register', { username: 'badinvite', password: 'flow password 8', inviteCode: 'wrong-code' })).status, 403);
     const registered = await call('/api/auth/register', { username: 'flowuser', password: 'flow password 8', inviteCode: 'flow-invite' });
     ok('邀请码注册成功', registered.status === 201);
     const cookie = cookieOf(registered);
