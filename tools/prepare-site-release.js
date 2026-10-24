@@ -40,10 +40,10 @@ function walk(dir, base = dir, out = []) {
   return out;
 }
 
-// 1) Clean-baseline guard over every directory the builders read or write.
-const dirty = spawnSync('git', ['status', '--porcelain', '--', 'site', 'data', 'skill'], { cwd: ROOT, encoding: 'utf8' });
+// 1) Clean-baseline guard over every directory the build reads or writes.
+const dirty = spawnSync('git', ['status', '--porcelain', '--', 'site', 'data', 'skill', 'tools', 'worker'], { cwd: ROOT, encoding: 'utf8' });
 if (dirty.status !== 0) fail('git status failed: ' + dirty.stderr);
-if (dirty.stdout.trim()) fail('site/data/skill 有未提交改动，先提交或还原后再构建发布包：\n' + dirty.stdout.trim());
+if (dirty.stdout.trim()) fail('site/data/skill/tools/worker 有未提交改动，先提交或还原后再构建发布包：\n' + dirty.stdout.trim());
 if (fs.existsSync(RELEASE)) fail('发布目录已存在：' + RELEASE + '（如需重建请先手动移除）');
 
 // 2) Regenerate vendor outputs in place (git diff afterwards shows exactly what changed).
@@ -75,7 +75,10 @@ for (const f of fs.readdirSync(path.join(ROOT, 'data/papers-full')).filter(f => 
 const indexPath = path.join(SITE, 'js/vendor/papers-index.js');
 const syncIndex = JSON.parse(fs.readFileSync(indexPath, 'utf8').match(/window\.PapersFullIndex = (\{[\s\S]*\});\s*$/)[1]);
 const syncIds = new Set(Object.keys(syncIndex));
-for (const id of syncIds) if (!approved.has(id)) excluded.push({ id, title: syncIndex[id].t, reason: '质量门排除（同步产物中存在但未通过材料/来源检查）' });
+const alreadyExcluded = new Set(excluded.map(e => e.id));
+for (const id of syncIds) if (!approved.has(id) && !alreadyExcluded.has(id)) {
+  excluded.push({ id, title: syncIndex[id].t, reason: '质量门排除（同步产物中存在但未通过材料/来源检查）' });
+}
 for (const id of approved) if (!syncIds.has(id)) fail('质量门通过但 sync 未产出索引: ' + id + '（检查 tools/sync-site-papers.js）');
 
 // 4) Assemble the release copy.
@@ -96,10 +99,27 @@ for (const rel of walk(releasePapersDir)) {
 const gz = zlib.gzipSync(Buffer.from(JSON.stringify(bundle), 'utf8'), { level: 9 });
 fs.writeFileSync(path.join(ASSETS, 'js/vendor/papers-bundle.json.gz'), gz);
 
+// 4b) answer-points / consensus-points 只保留"索引内且当前 data 有题目"的文件：
+// sync 从不清理旧输出，直接复制 site/ 会带上历史残留（含整轮被清空的过时文件）。
+const indexIds = new Set(Object.keys(releaseIndex));
+for (const dirName of ['answer-points', 'consensus-points']) {
+  const outDir = path.join(ASSETS, 'js/vendor', dirName);
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(outDir, { recursive: true });
+  const srcDir = path.join(ROOT, 'data', dirName);
+  if (!fs.existsSync(srcDir)) continue;
+  for (const f of fs.readdirSync(srcDir)) {
+    if (!f.endsWith('.json') || f === 'index.json') continue;
+    const doc = JSON.parse(fs.readFileSync(path.join(srcDir, f), 'utf8'));
+    if (doc.paperId && doc.questions && doc.questions.length && indexIds.has(doc.paperId)) {
+      fs.writeFileSync(path.join(outDir, doc.paperId + '.json'), JSON.stringify(doc));
+    }
+  }
+}
+
 // 5) Consistency assertions inside the release copy.
 const releaseFiles = walk(releasePapersDir);
 const bundleIds = new Set(Object.keys(bundle));
-const indexIds = new Set(Object.keys(releaseIndex));
 if (releaseFiles.length !== indexIds.size || releaseFiles.length !== bundleIds.size) {
   fail('配套不一致：papers 文件 ' + releaseFiles.length + ' / 索引 ' + indexIds.size + ' / bundle ' + bundleIds.size);
 }
@@ -108,6 +128,7 @@ for (const id of indexIds) {
   if (!fs.existsSync(path.join(releasePapersDir, id + '.json'))) fail('索引有但逐卷文件缺: ' + id);
 }
 const SENSITIVE = /(^|\/)\.runtime(\/|$)|deploy-edgeone|\.env$|\.zip$|\.sqlite$|\.db$|token|password|secret/i;
+// 注意：本断言只按文件路径拦截；文件内容中出现凭据值不在此检查范围（靠评审抽查，2026-10-24 GLM-5.3 抽查无凭据值）。
 for (const rel of walk(ASSETS)) {
   if (SENSITIVE.test(rel)) fail('发布包出现敏感文件: ' + rel);
   if (fs.statSync(path.join(ASSETS, rel)).size > 25 * 1024 * 1024) fail('文件超过 Cloudflare 25MiB 上限: ' + rel);
@@ -118,7 +139,11 @@ const wrangler = fs.readFileSync(path.join(ROOT, 'worker/wrangler.toml'), 'utf8'
   .replace(/main = ".*"/, 'main = ' + JSON.stringify(path.join(ROOT, 'worker/worker.js').replace(/\\/g, '/')))
   .replace(/directory = "\.\.\/site"/, 'directory = ' + JSON.stringify(ASSETS.replace(/\\/g, '/')))
   .replace(/migrations_dir = "migrations"/, 'migrations_dir = ' + JSON.stringify(path.join(ROOT, 'worker/migrations').replace(/\\/g, '/')));
-if (!/directory = ".*site-release/.test(wrangler)) fail('wrangler.toml 资源目录替换失败');
+if (!wrangler.includes('main = ' + JSON.stringify(path.join(ROOT, 'worker/worker.js').replace(/\\/g, '/'))) ||
+    !wrangler.includes('directory = ' + JSON.stringify(ASSETS.replace(/\\/g, '/'))) ||
+    !wrangler.includes('migrations_dir = ' + JSON.stringify(path.join(ROOT, 'worker/migrations').replace(/\\/g, '/')))) {
+  fail('wrangler.toml 替换失败：main/directory/migrations_dir 必须全部替换为绝对路径');
+}
 fs.writeFileSync(path.join(RELEASE, 'wrangler.toml'), wrangler);
 
 // 7) manifest.json — every asset with bytes+SHA256 (same shape as .agent/admin-release).
@@ -158,7 +183,7 @@ if (fs.existsSync(LIVE_SNAPSHOT)) {
     '- 线上快照：`.agent/mp-papers-release/assets-1792469869271/`（2026-10-19 上线版，索引 53 套 / 59,096B）',
     '- 新增文件 ' + added.length + ' 个 / 删除 ' + removed.length + ' 个 / 内容变化 ' + changed.length + ' 个',
     '- 新增（关键）：js/vendor/papers/（371 个逐卷 JSON）、js/vendor/papers-bundle.json.gz（' + (gz.length / 1024 / 1024).toFixed(1) + 'MB）、js/vendor/calibration.js',
-    '- 变化（关键）：' + changed.filter(f => !f.startsWith('js/vendor/papers/') && !f.startsWith('js/vendor/answer-points/') && !f.startsWith('js/vendor/consensus-points/')).map(f => '`' + f + '`').join('、'),
+    '- 变化（关键）：' + changed.filter(f => !f.startsWith('js/vendor/papers/')).map(f => '`' + f + '`').join('、'),
     '- 索引：window.PapersFullIndex 53 套 → **' + indexIds.size + ' 套**（含题目 ' + manifest.papers.totalQuestions + ' 道；参考答案采分点 ' + manifest.papers.withAnswerPoints + ' 套、共识锚点 ' + manifest.papers.withConsensus + ' 套）',
     ''
   ].join('\n');

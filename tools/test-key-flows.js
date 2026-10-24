@@ -121,6 +121,7 @@ async function main() {
     ok('健康检查就绪（auth/shared/registration）', health && health.authReady && health.sharedReady && health.registrationReady);
 
     // ---- 账号与权限 ----
+    check('错误邀请码注册被拒（403）', (await call('/api/auth/register', { username: 'badinvite', password: 'flow password 8', inviteCode: 'wrong-code' })).status, 403);
     const registered = await call('/api/auth/register', { username: 'flowuser', password: 'flow password 8', inviteCode: 'flow-invite' });
     ok('邀请码注册成功', registered.status === 201);
     const cookie = cookieOf(registered);
@@ -194,7 +195,7 @@ async function main() {
     await hangReader.read();           // 读到第一段后取消
     const closesBefore = upstreamCloses;
     ac.abort();
-    await assert.rejects(() => hangReader.read(), err => err && true); // AbortError/TypeError 均可
+    await assert.rejects(() => hangReader.read(), err => err && (err.name === 'AbortError' || err instanceof TypeError));
     let closed = false;
     for (let i = 0; i < 30 && !closed; i++) {
       await new Promise(r => setTimeout(r, 100));
@@ -221,7 +222,9 @@ async function main() {
       ]
     }, { cookie });
     const coach = lastUpstream();
-    ok('陪练契约：system 首消息且流式转发', coach.body.messages[0].role === 'system' && coach.body.messages[0].content.length > 20
+    ok('陪练契约：system 首消息原文往返且流式转发', coach.body.messages.length === 2
+      && coach.body.messages[0].role === 'system'
+      && coach.body.messages[0].content === '你是申论陪练老师，请针对学生作答给出点评与追问。'
       && coach.body.stream === true);
 
     // ---- 图片识别消息契约（image_url 数组原样转发） ----
@@ -232,8 +235,11 @@ async function main() {
     const vision = lastUpstream();
     const visionContent = vision.body.messages[0].content;
     ok('视觉契约：image_url 内容数组原样转发且模型不变', Array.isArray(visionContent)
-      && visionContent[0].type === 'image_url' && /^data:image\/jpeg/.test(visionContent[0].image_url.url)
-      && visionContent[1].type === 'text' && vision.body.model === 'glm-5.3-flash');
+      && vision.body.messages.length === 1
+      && visionContent.length === 2
+      && visionContent[0].type === 'image_url' && visionContent[0].image_url.url === 'data:image/jpeg;base64,/9j/4AAQ'
+      && visionContent[1].type === 'text' && visionContent[1].text === '只转录图片中的手写作答，不要批改。'
+      && vision.body.model === 'glm-5.3-flash');
 
     // ---- 登出 ----
     await call('/api/auth/logout', {}, { cookie });
