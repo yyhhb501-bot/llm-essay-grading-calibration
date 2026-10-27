@@ -1650,11 +1650,12 @@ body.auth-locked #code-modal, body.auth-locked #chat-bar { display: none !import
         <div>
           <span style="color:#64748b;">统计校准预测分：</span>
           <strong id="result-calibrated-score" style="color:#0f172a;font-size:14px;">—</strong>
-          <span style="color:#94a3b8;font-size:11px;">（Ridge/GBDT 消除偏差）</span>
+          <span style="color:#94a3b8;font-size:11px;">（人工标注模型的辅助估计）</span>
         </div>
-        <div id="result-consistency-badge" style="background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:12px;font-weight:500;font-size:11px;">评分一致性：高置信度</div>
+        <div id="result-consistency-badge" style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:12px;font-weight:500;font-size:11px;">一致性待验证</div>
       </div>
       <div id="result-dims"></div>
+      <p class="field-hint">统计校准待真实人工评分验证；当前分数为 AI 辅助参考。<a href="research.html" target="_blank" rel="noopener">查看评估方法与数据状态</a></p>
     </div>
 
     <div class="card">
@@ -2513,94 +2514,74 @@ module.exports = {
 
 
 /* ===== js/vendor/calibration.js ===== */
-/**
- * site/js/vendor/calibration.js —— 大模型申论评分统计校准模块（Ridge / GBDT）
- * 
- * 作用：
- *   1. 接收大模型原始打分、五维子分数、作答字数与题型；
- *   2. 基于 2,400+ 真实考生大样本 Ridge/GBDT 回归模型，消除中值压缩偏差与字数冗余偏差；
- *   3. 输出校准后预测分与评分一致性/置信度指标。
- */
+/** Portable Ridge inference. No bundled synthetic weights are used for real essays. */
 (function (root) {
   'use strict';
-
-  var WEIGHTS = {
-    raw_llm_score: 0.1933,
-    key_point_coverage: -1.6789,
-    dim_keypoints: 0.2730,
-    dim_logic: 0.5723,
-    dim_language: 0.6957,
-    dim_policy: 0.8998,
-    dim_format: 1.4881,
-    word_count: -0.0201,
-    type_guina: 7.6604,
-    type_zonghe: 2.8258,
-    type_duice: -2.5285,
-    type_gongwen: -7.3517,
-    type_wenzhang: -0.7276,
-    intercept: 19.7659
-  };
-
-  function calibrateScore(params) {
-    if (!params || typeof params.raw_total !== 'number' || !isFinite(params.raw_total)) {
-      return null;
+  var model = null;
+  var types = ['归纳概括', '综合分析', '提出对策', '公文写作', '文章写作'];
+  var features = ['raw_llm_score', 'key_point_coverage', 'dim_keypoints', 'dim_logic',
+    'dim_language', 'dim_policy', 'dim_format', 'word_count', 'type_guina',
+    'type_zonghe', 'type_duice', 'type_gongwen', 'type_wenzhang'];
+  function finite(n) { return typeof n === 'number' && isFinite(n); }
+  function score(n) { return finite(n) && n >= 0 && n <= 100; }
+  function configure(value) {
+    model = null;
+    if (!value || value.schema_version !== 1 || value.model_type !== 'ridge' ||
+        value.approved_for_runtime !== true || !value.training_provenance ||
+        value.training_provenance.data_kind !== 'human' ||
+        value.training_provenance.human_labels_verified !== true ||
+        !/^[a-f0-9]{64}$/.test(value.training_provenance.source_sha256 || '') ||
+        JSON.stringify(value.feature_names) !== JSON.stringify(features) ||
+        !value.feature_transform || value.feature_transform.word_count !== 'divide_by_100' ||
+        !value.weights || !finite(value.weights.intercept)) return false;
+    if (!features.every(function (name) { return finite(value.weights[name]); })) return false;
+    model = JSON.parse(JSON.stringify(value));
+    return true;
+  }
+  function reliability(scores) {
+    if (!Array.isArray(scores) || scores.length < 2 || !scores.every(score)) {
+      return { n: Array.isArray(scores) ? scores.length : 0, variance: null, std: null,
+        badge: '重复评分不足，一致性待验证' };
     }
-
-    var rawTotal = params.raw_total;
+    var mean = scores.reduce(function (s, n) { return s + n; }, 0) / scores.length;
+    var variance = scores.reduce(function (s, n) { return s + Math.pow(n - mean, 2); }, 0) / (scores.length - 1);
+    return { n: scores.length, variance: variance, std: Math.sqrt(variance),
+      badge: scores.length + ' 次评分，标准差 ' + Math.sqrt(variance).toFixed(1) + ' 分（仅表示稳定性）' };
+  }
+  function featureValues(params) {
+    if (!params || !score(params.raw_total) || types.indexOf(params.question_type) < 0 ||
+        !finite(params.word_count) || params.word_count < 1 || params.word_count > 100000 ||
+        !finite(params.coverage) || params.coverage < 0 || params.coverage > 1) return null;
     var dims = params.dimensions || {};
-    var qtype = String(params.question_type || '归纳概括');
-    var wordCount = Number(params.word_count || 400);
-
-    var dimKp = Number(dims['要点完整度'] || dims.dim_keypoints || (rawTotal * 0.45));
-    var dimLogic = Number(dims['逻辑结构'] || dims.dim_logic || (rawTotal * 0.2));
-    var dimLang = Number(dims['语言规范'] || dims.dim_language || (rawTotal * 0.15));
-    var dimPol = Number(dims['政策素养'] || dims.dim_policy || (rawTotal * 0.1));
-    var dimFmt = Number(dims['卷面格式'] || dims.dim_format || (rawTotal * 0.1));
-    var coverage = Number(params.coverage || (dimKp / 50.0));
-
-    var score = WEIGHTS.intercept +
-      WEIGHTS.raw_llm_score * rawTotal +
-      WEIGHTS.key_point_coverage * coverage +
-      WEIGHTS.dim_keypoints * dimKp +
-      WEIGHTS.dim_logic * dimLogic +
-      WEIGHTS.dim_language * dimLang +
-      WEIGHTS.dim_policy * dimPol +
-      WEIGHTS.dim_format * dimFmt +
-      WEIGHTS.word_count * (wordCount / 100.0);
-
-    if (qtype === '归纳概括') score += WEIGHTS.type_guina;
-    else if (qtype === '综合分析') score += WEIGHTS.type_zonghe;
-    else if (qtype === '提出对策') score += WEIGHTS.type_duice;
-    else if (qtype === '公文写作') score += WEIGHTS.type_gongwen;
-    else if (qtype === '文章写作') score += WEIGHTS.type_wenzhang;
-
-    // Clip to reasonable scale
-    score = Math.max(45.0, Math.min(95.0, score));
-    var rounded = Math.round(score * 10) / 10;
-
-    return {
-      calibrated_score: rounded,
-      raw_score: rawTotal,
-      score_diff: Math.round((rounded - rawTotal) * 10) / 10,
-      reliability: {
-        tier: 'High',
-        badge: '评分一致性：高置信度 (σ ≤ 2.0 分)',
-        description: '已通过统计校准引擎消除大模型中值压缩与冗余字数偏差'
-      }
-    };
+    var names = ['要点完整度', '逻辑结构', '语言规范', '政策素养', '卷面格式'];
+    var values = names.map(function (name, i) {
+      return Object.prototype.hasOwnProperty.call(dims, name) ? dims[name] : dims[features[i + 2]];
+    });
+    if (!values.every(score)) return null;
+    return [params.raw_total, params.coverage].concat(values, [params.word_count / 100],
+      types.map(function (name) { return name === params.question_type ? 1 : 0; }));
   }
-
-  var ScoreCalibrator = {
-    calibrateScore: calibrateScore,
-    WEIGHTS: WEIGHTS
-  };
-
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ScoreCalibrator;
-  } else {
-    root.ScoreCalibrator = ScoreCalibrator;
+  function calibrateScore(params) {
+    if (!model) return null;
+    var values = featureValues(params);
+    if (!values) return null;
+    var prediction = features.reduce(function (s, name, i) { return s + model.weights[name] * values[i]; }, model.weights.intercept);
+    var result = Math.round(Math.max(0, Math.min(100, prediction)) * 10) / 10;
+    return { calibrated_score: result, raw_score: params.raw_total,
+      score_diff: Math.round((result - params.raw_total) * 10) / 10,
+      reliability: reliability(params.repeated_scores) };
   }
-})(typeof window !== 'undefined' ? window : global);
+  var api = { configure: configure, calibrateScore: calibrateScore, reliability: reliability,
+    featureValues: featureValues, isReady: function () { return !!model; }, FEATURE_NAMES: features.slice() };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.ScoreCalibrator = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+
+/* ===== js/calibration-model.js ===== */
+// No verified human-labeled calibration model has been supplied.
+// Replace only after reviewing training provenance and holdout results.
+if (window.ScoreCalibrator) window.ScoreCalibrator.configure(null);
 
 
 /* ===== js/auth.js ===== */
@@ -3744,7 +3725,7 @@ module.exports = {
   var CHAT_ENDPOINT = '/api/chat';
 
   /** 服务端模式下的默认模型（方案 §5） */
-  var SERVER_DEFAULT_MODEL = 'OpenCode Go · DeepSeek V4.1 Flash';
+  var SERVER_DEFAULT_MODEL = '共享模型';
 
   /**
    * 六个供应商预设，baseURL 与模型清单与小程序版 utils/api.js 的 PRESETS 完全一致；
@@ -4462,7 +4443,9 @@ module.exports = {
             finish(false, '模型返回的内容无法解析，请确认地址是否为 OpenAI 兼容格式。');
             return;
           }
-          var name = conf.mode === 'server' ? (conf.model || SERVER_DEFAULT_MODEL) : conf.model;
+          var returnedModel = '';
+          try { returnedModel = String(JSON.parse(text).model || '').trim(); } catch (_) {}
+          var name = conf.mode === 'server' ? (returnedModel || SERVER_DEFAULT_MODEL) : conf.model;
           finish(true, '连接成功，模型 ' + name + ' 可用。');
         });
       }).catch(function (err) {
@@ -5060,6 +5043,11 @@ module.exports = {
     toast('已填入标准答卷范例，点击下方按钮开始批改！');
   }
 
+  function hasGradeEvidence(material) {
+    var text = String(material || '').trim();
+    return !!text && !/^[（(\s]*[未无不]提供[）)\s]*$|^（?暂无[）)]?$|^[-—]+$/.test(text);
+  }
+
   function onGradeSubmit() {
     var built = buildGradeMessages(Store.getConfig());
     if (!built.question) {
@@ -5068,6 +5056,10 @@ module.exports = {
     }
     if (!built.answer) {
       toast('请先粘贴你的作答');
+      return;
+    }
+    if (!hasGradeEvidence($('grade-material').value)) {
+      toast('请先填写给定资料；缺少关键材料时暂不评分。');
       return;
     }
     if (!Store.isConfigured()) {
@@ -5546,7 +5538,7 @@ module.exports = {
     var payload = item.payload || {};
     var text = payload.content || '';
     var status = payload.status || (text ? 'done' : '');
-    var scores = MD.parseScores(text) || payload.scores || null;
+    var scores = hasGradeEvidence(payload.material) ? (MD.parseScores(text) || payload.scores || null) : null;
     var view = buildScoreView(scores);
     var streaming = status === 'streaming';
     var changed = text !== resultLastText;
@@ -5567,13 +5559,14 @@ module.exports = {
       if (view.hasScore && root.ScoreCalibrator) {
         var dimMap = {};
         for (var di = 0; di < (view.dimensions || []).length; di++) {
-          dimMap[view.dimensions[di].name] = Number(view.dimensions[di].scoreText) || 0;
+          dimMap[view.dimensions[di].name] = view.dimensions[di].scoreText === '' ? NaN : Number(view.dimensions[di].scoreText);
         }
         var calibRes = root.ScoreCalibrator.calibrateScore({
-          raw_total: Number(view.totalText) || 70,
+          raw_total: Number(view.totalText),
           dimensions: dimMap,
-          question_type: payload.questionType || '归纳概括',
-          word_count: payload.answer ? countWords(payload.answer) : 400
+          question_type: payload.questionType,
+          word_count: payload.answer ? countWords(payload.answer) : NaN,
+          coverage: payload.anchor && typeof payload.anchor.coverage === 'number' ? payload.anchor.coverage : NaN
         });
         if (calibRes) {
           calibRow.hidden = false;
@@ -5806,6 +5799,10 @@ module.exports = {
     var payload = item.payload || {};
     var question = String(payload.question || '').trim();
     var answer = String(payload.answer || '').trim();
+    if (!hasGradeEvidence(payload.material)) {
+      toast('缺少关键材料，暂不评分。请回批改页补充给定资料。');
+      return;
+    }
     if (!question || !answer) {
       toast('这条记录里没有完整的题目与作答，请回批改页重新提交');
       return;
@@ -6740,6 +6737,8 @@ module.exports = {
       $('settings-official-title').textContent = info.sharedReady ? (info.officialModel || Api.SERVER_DEFAULT_MODEL) : '共享模型未连接';
       $('settings-official-description').textContent = info.sharedProvider === 'opencode-go'
         ? '由站主电脑上的 OpenCode Go 提供，仅支持文本；电脑、OpenCode 和桥接服务关闭时不可用。'
+        : info.sharedProvider === 'opencode-go-api'
+        ? '由服务器直接调用 OpenCode Go 的 DeepSeek API，无需站主电脑保持开机；拍照识别使用另行配置的视觉服务。'
         : '共享模型由站主配置的服务端密钥提供；登录账号后即可使用。';
       $('settings-official-status').textContent = info.sharedReady
         ? '已启用 · ' + info.officialModel + (info.sharedProvider === 'opencode-go' ? ' · 本机 OpenCode 桥接' : ' · 服务端模型')

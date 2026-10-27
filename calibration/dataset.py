@@ -1,7 +1,7 @@
 """
 calibration/dataset.py
 Benchmark dataset generation, loading, and prompt-based cross-validation splitting.
-Simulates 2,400+ real civil-service essay grading submissions across 300+ candidate accounts and 24 unseen prompt sets.
+Creates synthetic numeric fixtures. No real candidates, essays or human grades are included.
 """
 
 import os
@@ -94,6 +94,8 @@ def generate_benchmark_dataset(num_samples=2420, num_prompts=24, num_users=315, 
         critical_material_missing = 1 if np.random.random() < 0.035 else 0
         
         records.append({
+            "data_kind": "synthetic",
+            "label_source": "synthetic_rng_seed_" + str(seed),
             "essay_id": essay_id,
             "prompt_id": pid,
             "user_id": uid,
@@ -114,10 +116,12 @@ def generate_benchmark_dataset(num_samples=2420, num_prompts=24, num_users=315, 
     return df
 
 
-def get_benchmark_df(force_regenerate=False):
+def get_benchmark_df(force_regenerate=False, *, allow_synthetic=False):
     """
     Load or generate the benchmark dataset.
     """
+    if not allow_synthetic:
+        raise ValueError('Bundled data is synthetic. Use --input with human labels, or explicit --demo.')
     os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
     if os.path.exists(DATA_PATH) and not force_regenerate:
         df = pd.read_csv(DATA_PATH)

@@ -1,0 +1,12 @@
+{
+  "name": "llm-essay-grading-calibration",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Chinese essay practice website with evidence-aware LLM feedback and explicit-provenance calibration experiments",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "start": "node site-server.js",
+    "build": "node tools/build-site.js && node tools/bundle-single-html.js",
+    "test": "node tools/test-auth.mjs && node tools/test-auth-client.cjs && node tools/test-site.js && node tools/test-site-api.js && node tools/test-model-policy.mjs && node tools/test-grading-evidence.cjs"
+  }
+}

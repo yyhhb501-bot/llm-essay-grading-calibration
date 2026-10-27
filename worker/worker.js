@@ -25,6 +25,8 @@
 import { createAuth } from '../server/auth.mjs';
 import { servePracticePaper } from '../server/paper-library.mjs';
 import { adminOverview } from '../server/admin.mjs';
+import modelPolicy from '../server/model-policy.cjs';
+import openCodeGo from '../server/opencode-go.cjs';
 
 export default {
   /**
@@ -52,11 +54,13 @@ export default {
     if (url.pathname === '/api/health') {
       const openCodeReady = !!(env && env.OPENCODE_BRIDGE_URL && env.OPENCODE_BRIDGE_TOKEN);
       const zhipuReady = !!(env && env.ZHIPU_API_KEY);
+      const goReady = !!String((env && env.OPENCODE_GO_API_KEY) || '').trim();
       return json({
         ok: true,
-        sharedReady: openCodeReady || zhipuReady,
-        officialModel: openCodeReady ? 'OpenCode Go · DeepSeek V4.1 Flash' : 'GLM-5.3-Flash',
-        sharedProvider: openCodeReady ? 'opencode-go' : (zhipuReady ? 'zhipu' : ''),
+        sharedReady: goReady || openCodeReady || zhipuReady,
+        officialModel: goReady ? openCodeGo.MODEL : openCodeReady ? 'OpenCode Go · DeepSeek V4.1 Flash' : modelPolicy.selectModel({}, { sharedModel: env && env.ZHIPU_MODEL }),
+        officialVisionModel: (openCodeReady && !goReady) || !zhipuReady ? '' : modelPolicy.selectModel({ vision: true }, { sharedModel: env && env.ZHIPU_MODEL, visionModel: env && env.ZHIPU_VISION_MODEL }),
+        sharedProvider: goReady ? 'opencode-go-api' : openCodeReady ? 'opencode-go' : (zhipuReady ? 'zhipu' : ''),
         authRequired: true,
         authReady: !!(env && env.AUTH_DB),
         registrationReady: auth.registrationReady()
@@ -70,7 +74,7 @@ export default {
       }
       const authorization = await auth.authorize(request, { native: url.pathname === '/api/mp/chat' });
       if (authorization.response) return authorization.response;
-      return handleChat(request, env);
+      return handleChat(request, env, authorization.user.id);
     }
 
     // ---- 其余路径：静态资源 ----
@@ -144,7 +148,7 @@ function pickServerMessage(text) {
  * @param {Record<string, unknown>} env
  * @returns {Promise<Response>}
  */
-async function handleChat(request, env) {
+async function handleChat(request, env, userId) {
   // Account session and same-origin checks have already passed in fetch().
   let body;
   try {
@@ -158,9 +162,11 @@ async function handleChat(request, env) {
 
   // 3. 选模式：自带 Key 纯转发，服务端模式用环境变量密钥
   const ownKey = String(body.apiKey || '').trim();
+  const goKey = String((env && env.OPENCODE_GO_API_KEY) || '').trim();
+  const useGo = openCodeGo.selected(body, goKey);
   const bridgeUrl = String((env && env.OPENCODE_BRIDGE_URL) || '').trim();
   const bridgeToken = String((env && env.OPENCODE_BRIDGE_TOKEN) || '').trim();
-  if (!ownKey && bridgeUrl) {
+  if (!ownKey && bridgeUrl && !useGo && !goKey) {
     if (!bridgeToken) return json({ error: 'OpenCode 本机桥接尚未配置访问密钥。' }, 500);
     let target;
     try { target = new URL(bridgeUrl); } catch (e) { return json({ error: 'OpenCode 桥接地址配置无效。' }, 500); }
@@ -200,15 +206,18 @@ async function handleChat(request, env) {
       }
     });
   }
-  let apiKey = ownKey;
+  let apiKey = useGo ? goKey : ownKey;
   let baseURL;
-  if (apiKey) {
+  if (useGo) {
+    baseURL = openCodeGo.BASE_URL;
+  } else if (apiKey) {
     baseURL = String(body.baseURL || '').trim() || 'https://open.bigmodel.cn/api/paas/v4';
   } else {
     apiKey = String((env && env.ZHIPU_API_KEY) || '').trim();
     baseURL = String((env && env.ZHIPU_BASE_URL) || 'https://open.bigmodel.cn/api/paas/v4').trim();
   }
   if (!apiKey) {
+    if (body.vision && goKey) return json({ error: 'OpenCode Go DeepSeek 已用于文本批改；拍照识别尚未配置视觉服务，请先粘贴文字作答。' }, 400);
     return json({ error: '服务端还没有配置模型密钥：请站主执行 wrangler secret put ZHIPU_API_KEY，或改用自带 Key 模式。' }, 500);
   }
   baseURL = baseURL.replace(/\/+$/, '');
@@ -216,8 +225,7 @@ async function handleChat(request, env) {
     return json({ error: '模型地址格式不对，应以 https:// 开头。' }, 400);
   }
 
-  const defaultModel = body.vision ? 'glm-4v-flash' : 'glm-5.3-flash';
-  const model = String(body.model || '').trim() || defaultModel;
+  const model = useGo ? openCodeGo.MODEL : modelPolicy.selectModel(body, { sharedModel: env && env.ZHIPU_MODEL, visionModel: env && env.ZHIPU_VISION_MODEL });
   const stream = body.stream !== false;
 
   const upstreamBody = {
@@ -234,13 +242,14 @@ async function handleChat(request, env) {
   if (body.ping) upstreamBody.max_tokens = 8; // 连通性测试：限制输出长度
   else if (Number(body.max_tokens) > 0) upstreamBody.max_tokens = Number(body.max_tokens);
   else upstreamBody.max_tokens = 16384; // 报告+思考需要足量输出预算，防止长报告被截断
+  modelPolicy.applyReasoning(upstreamBody, body);
 
   // 4. 请求上游
   let upstream;
   try {
     upstream = await fetch(baseURL + '/chat/completions', {
       method: 'POST',
-      headers: {
+      headers: useGo ? await openCodeGo.headers(goKey, userId, body.messages) : {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + apiKey
       },

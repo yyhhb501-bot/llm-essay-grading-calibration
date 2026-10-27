@@ -1,0 +1,10 @@
+{
+  "data_kind": "synthetic",
+  "human_labels_verified": false,
+  "actual_users": null,
+  "actual_essay_submissions": null,
+  "generator": "calibration/dataset.py",
+  "seed": 42,
+  "sha256": "699b0599da6adca87d33e9785e935671b4a47421e84b7ba3a727bbbd07b694d1",
+  "notice": "Generated numeric fixtures, not human-scored essays. Do not use as CV outcome evidence."
+}

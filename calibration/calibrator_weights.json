@@ -61,5 +61,11 @@
     "valid_samples": 2347,
     "num_prompts": 24,
     "cv_strategy": "GroupKFold by prompt_id (generalization to unseen prompts)"
+  },
+  "approved_for_runtime": false,
+  "training_provenance": {
+    "data_kind": "synthetic",
+    "human_labels_verified": false,
+    "notice": "Legacy simulation weights; NOT an empirically validated calibration model."
   }
 }

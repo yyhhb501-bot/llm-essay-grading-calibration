@@ -569,6 +569,11 @@
     toast('已填入标准答卷范例，点击下方按钮开始批改！');
   }
 
+  function hasGradeEvidence(material) {
+    var text = String(material || '').trim();
+    return !!text && !/^[（(\s]*[未无不]提供[）)\s]*$|^（?暂无[）)]?$|^[-—]+$/.test(text);
+  }
+
   function onGradeSubmit() {
     var built = buildGradeMessages(Store.getConfig());
     if (!built.question) {
@@ -577,6 +582,10 @@
     }
     if (!built.answer) {
       toast('请先粘贴你的作答');
+      return;
+    }
+    if (!hasGradeEvidence($('grade-material').value)) {
+      toast('请先填写给定资料；缺少关键材料时暂不评分。');
       return;
     }
     if (!Store.isConfigured()) {
@@ -1055,7 +1064,7 @@
     var payload = item.payload || {};
     var text = payload.content || '';
     var status = payload.status || (text ? 'done' : '');
-    var scores = MD.parseScores(text) || payload.scores || null;
+    var scores = hasGradeEvidence(payload.material) ? (MD.parseScores(text) || payload.scores || null) : null;
     var view = buildScoreView(scores);
     var streaming = status === 'streaming';
     var changed = text !== resultLastText;
@@ -1076,13 +1085,14 @@
       if (view.hasScore && root.ScoreCalibrator) {
         var dimMap = {};
         for (var di = 0; di < (view.dimensions || []).length; di++) {
-          dimMap[view.dimensions[di].name] = Number(view.dimensions[di].scoreText) || 0;
+          dimMap[view.dimensions[di].name] = view.dimensions[di].scoreText === '' ? NaN : Number(view.dimensions[di].scoreText);
         }
         var calibRes = root.ScoreCalibrator.calibrateScore({
-          raw_total: Number(view.totalText) || 70,
+          raw_total: Number(view.totalText),
           dimensions: dimMap,
-          question_type: payload.questionType || '归纳概括',
-          word_count: payload.answer ? countWords(payload.answer) : 400
+          question_type: payload.questionType,
+          word_count: payload.answer ? countWords(payload.answer) : NaN,
+          coverage: payload.anchor && typeof payload.anchor.coverage === 'number' ? payload.anchor.coverage : NaN
         });
         if (calibRes) {
           calibRow.hidden = false;
@@ -1315,6 +1325,10 @@
     var payload = item.payload || {};
     var question = String(payload.question || '').trim();
     var answer = String(payload.answer || '').trim();
+    if (!hasGradeEvidence(payload.material)) {
+      toast('缺少关键材料，暂不评分。请回批改页补充给定资料。');
+      return;
+    }
     if (!question || !answer) {
       toast('这条记录里没有完整的题目与作答，请回批改页重新提交');
       return;
@@ -2249,6 +2263,8 @@
       $('settings-official-title').textContent = info.sharedReady ? (info.officialModel || Api.SERVER_DEFAULT_MODEL) : '共享模型未连接';
       $('settings-official-description').textContent = info.sharedProvider === 'opencode-go'
         ? '由站主电脑上的 OpenCode Go 提供，仅支持文本；电脑、OpenCode 和桥接服务关闭时不可用。'
+        : info.sharedProvider === 'opencode-go-api'
+        ? '由服务器直接调用 OpenCode Go 的 DeepSeek API，无需站主电脑保持开机；拍照识别使用另行配置的视觉服务。'
         : '共享模型由站主配置的服务端密钥提供；登录账号后即可使用。';
       $('settings-official-status').textContent = info.sharedReady
         ? '已启用 · ' + info.officialModel + (info.sharedProvider === 'opencode-go' ? ' · 本机 OpenCode 桥接' : ' · 服务端模型')

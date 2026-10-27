@@ -20,6 +20,7 @@ async function check(protocol, mode) {
   var cfg = { mode: mode, accessCode: 'test-code', baseURL: 'https://api.example.test/v1', apiKey: 'test-key', model: 'glm-5.3-flash' };
   var result = await root.Api.testConnection(cfg);
   assert.strictEqual(result.ok, true);
+  assert.ok(result.message.indexOf(mode === 'server' ? '共享模型' : 'glm-5.3-flash') !== -1, '连接提示不得误报 OpenCode 供应商');
   var direct = protocol === 'file:' && mode === 'selfkey';
   assert.strictEqual(requests[0].url, direct ? 'https://api.example.test/v1/chat/completions' : '/api/chat');
   assert.strictEqual(requests[0].body.stream, false);
@@ -84,6 +85,11 @@ async function check(protocol, mode) {
   await check('http:', 'server');
   await check('http:', 'selfkey');
   await check('file:', 'selfkey');
+  var named = { Auth: { isAuthenticated: function () { return true; } }, fetch: async function () {
+    return { status: 200, text: async function () { return JSON.stringify({ model: 'actual-provider-model', choices: [{ message: { content: 'ok' } }] }); } };
+  } };
+  vm.runInNewContext(source, { window: named, location: { protocol: 'https:' }, AbortController: AbortController });
+  assert.ok((await named.Api.testConnection({ mode: 'server', model: 'stale-client-model' })).message.includes('actual-provider-model'), '共享连接提示采用上游实际返回模型');
   var sent = 0;
   var unauthorized = { Auth: { isAuthenticated: function () { return false; } }, fetch: function () { sent++; } };
   vm.runInNewContext(source, { window: unauthorized, location: { protocol: 'https:' }, AbortController: AbortController });

@@ -56,6 +56,7 @@ var jsFiles = [
   'js/vendor/paper-catalog.js',
   'js/vendor/coverage.js',
   'js/vendor/calibration.js',
+  'js/calibration-model.js',
   'js/auth.js',
   'js/store.js',
   'js/md.js',

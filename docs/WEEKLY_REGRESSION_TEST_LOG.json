@@ -20,7 +20,9 @@
       "mae_improved_over_raw": true,
       "qwk_improved_over_raw": true
     },
-    "status": "PASSED"
+    "status": "PASSED",
+    "data_kind": "synthetic",
+    "notice": "Legacy simulation evaluated training-overlapping samples; NOT a production weekly run or generalization result."
   },
   {
     "timestamp": "2026-10-23T13:19:32Z",
@@ -43,6 +45,8 @@
       "mae_improved_over_raw": true,
       "qwk_improved_over_raw": true
     },
-    "status": "PASSED"
+    "status": "PASSED",
+    "data_kind": "synthetic",
+    "notice": "Legacy simulation evaluated training-overlapping samples; NOT a production weekly run or generalization result."
   }
 ]

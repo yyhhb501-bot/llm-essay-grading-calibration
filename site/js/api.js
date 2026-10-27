@@ -25,7 +25,7 @@
   var CHAT_ENDPOINT = '/api/chat';
 
   /** 服务端模式下的默认模型（方案 §5） */
-  var SERVER_DEFAULT_MODEL = 'OpenCode Go · DeepSeek V4.1 Flash';
+  var SERVER_DEFAULT_MODEL = '共享模型';
 
   /**
    * 六个供应商预设，baseURL 与模型清单与小程序版 utils/api.js 的 PRESETS 完全一致；
@@ -743,7 +743,9 @@
             finish(false, '模型返回的内容无法解析，请确认地址是否为 OpenAI 兼容格式。');
             return;
           }
-          var name = conf.mode === 'server' ? (conf.model || SERVER_DEFAULT_MODEL) : conf.model;
+          var returnedModel = '';
+          try { returnedModel = String(JSON.parse(text).model || '').trim(); } catch (_) {}
+          var name = conf.mode === 'server' ? (returnedModel || SERVER_DEFAULT_MODEL) : conf.model;
           finish(true, '连接成功，模型 ' + name + ' 可用。');
         });
       }).catch(function (err) {

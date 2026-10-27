@@ -1,231 +1,81 @@
-# LLM-based Essay Grading & Score-Calibration System
-# 申论朱批 · 大模型申论智能阅卷与统计分数校准系统
+# 申论朱批
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](https://www.python.org/)
-[![Node: 18+](https://img.shields.io/badge/Node-18%2B-green.svg)](https://nodejs.org/)
-[![Benchmarks: Passed](https://img.shields.io/badge/Benchmarks-GroupKFold%20Passed-success.svg)](docs/LLM_ESSAY_GRADING_CALIBRATION_BLOG.md)
-[![Calibration: MAE 4.1 | QWK 0.71](https://img.shields.io/badge/Calibration-MAE%204.1%20%7C%20QWK%200.71-orange.svg)](docs/LLM_SCORING_BIAS_ANALYSIS.md)
+LLM-based Essay Grading and Score-Calibration System
 
-> **Author**: Zhanjun Yang  
-> **GitHub Pages Live Demo**: [https://yyhhb501-bot.github.io/llm-essay-grading-calibration/](https://yyhhb501-bot.github.io/llm-essay-grading-calibration/)  
-> **Technical Blog**: [From Hallucinated Grades to Statistical Rigor: Calibrating LLMs for High-Stakes Civil-Service Essay Scoring](docs/LLM_ESSAY_GRADING_CALIBRATION_BLOG.md)  
-> **Online Deployment**: [https://shenlundawang.asia](https://shenlundawang.asia) (300+ Users, 2,400+ Essays Evaluated)  
+[进入批改网站](https://shenlundawang.asia/) · [研究与数据状态](https://yyhhb501-bot.github.io/llm-essay-grading-calibration/site/research.html) · [校准复现说明](calibration/README.md)
 
----
+基于题目、给定材料和考生作答的申论练习网站，提供结构化评分、逐条批注、解题陪练、真题库与备考计划。支持账号登录、共享模型及自带 API Key。分数仅供练习参考，不是官方阅卷结果。
 
-## 🌟 项目亮点 (Key Highlights)
+**当前状态：应用与校准流程已实现，真实效果待验证。** 维护者尚未提供真实人工评分样本、用户人数和提交量记录。仓库中的 2,420 行评分数据是程序生成的模拟数值，不是真实作答；此前文档中的 MAE 6.8→4.1、QWK 0.52→0.71、300 多用户、2,400 多篇提交等表述没有证据支持，已撤下。模拟数据不能复现真实业务效果，亦不能作为简历成果。
 
-本项目是针对中国公务员申论考试（国考 / 省考）的大模型端到端智能阅卷与统计分数校准系统。项目将主观题评价从“不可信的生成式黑盒”改造成“具备可复算证据链与统计校准的严谨评测管线”：
+## 功能
 
-1. **多维量表与证据链对齐（Multi-Dimensional Rubrics & Evidence Verification）**：
-   - 融合题干要求、给定资料与考生作答，支持申论五大题型（归纳概括、综合分析、提出对策、公文写作、文章写作）；
-   - 输出结构化五维打分（要点完整度、逻辑结构、语言规范、政策素养、卷面格式）及逐句红笔朱批与升格示范；
-   - 研发**采分点抽取与证据链验证机制**，在关键原材料缺失或题干任务不匹配时严格**暂扣打分（Withhold Scores）**，从源头杜绝大模型在缺乏依据时的虚假评分幻觉。
+- 五类申论题型、材料与题目输入、流式批改、多维分数、逐句批注与修改建议；缺关键材料时要求暂不评分。
+- 真题筛选与带入作答、对话陪练、备考计划、浏览器本机历史。
+- 邀请注册、用户名密码、HttpOnly 会话、管理员角色；个人历史和设置按账号保存在当前浏览器，暂不跨设备同步。
+- 模型共享转发与自带 Key，识图依赖所配置视觉模型的实际能力。
+- Python Ridge/梯度提升树实验：题目组隔离、训练组内交叉验证、MAE/QWK、特征消融、分数段/题型/字数偏差、观测重复评分方差。
+- 浏览器 Ridge 推理：仅接受经审核的人类标签模型和完整特征；默认禁用，不使用仓库模拟权重改分，不显示固定高置信度。
 
-2. **统计分数校准模型（ML Score Calibration on Unseen Prompts）**：
-   - 基于 2,420 篇真实考生申论作答样本，采用 **GroupKFold (按题目切分)** 严防测试集信息泄露，评估在新题目上的外推泛化能力；
-   - 结合 **Ridge 回归** 与 **梯度提升树 (GBDT)** 对大模型原始打分进行特征校准；
-   - **核心实验指标**：校准模型将平均绝对误差（MAE）从 **6.8 分压降至 4.1 分**（百分制），二次加权卡帕系数（QWK）从 **0.52 显著跃升至 0.71**，达到资深人工阅卷专家的一致性水平。
+## 本地启动网站
 
-3. **特征消融实验（Feature Ablation Study）**：
-   - 定量评估了各模块的边际贡献：原始总分模型 (MAE 5.88, QWK 0.422) $\to$ 五维结构量子量表 (MAE 4.22, QWK 0.720) $\to$ 引入采分点覆盖率全特征 (MAE 3.81, QWK 0.759)；置换重要度证实采分点覆盖率是去偏的最关键特征。
+Node.js **22.13+**（使用内置 `node:sqlite`），推荐 24 LTS。网站运行不需要 npm 包。
 
-4. **评分偏差分析与一致性检验（Bias Analysis & Score-Consistency Metric）**：
-   - **分数两极压缩纠偏**：排除了大模型低分虚高（+5.5分）与高分压制（-3.6分）的均值回归偏见；
-   - **字数冗余效应消除**：抑制了单纯依赖长文字数获取虚高分数的现象；
-   - **评分稳定性指标**：引入重复评阅方差（Score-Consistency Metric）作为置信度标签，评阅方差 $\sigma^2$ 从 9.80 降低至 2.01，高置信度打分比例从 20% 提升至 92%。
-
-5. **全端可用与持续迭代（Turnkey Full-Stack & Regression Routine）**：
-   - 提供现代化 Web 网站（支持免登录游客试用与账号体系）、零依赖单文件 HTML（`申论朱批.html`）以及原生微信小程序；
-   - 包含每周自动化回归评测管线（`weekly_eval_routine.py`），监控线上数据分布漂移并防范模型退化。
-
----
-
-## 📊 基准评测结果 (Benchmark Results)
-
-在 2,420 份作答样本、24 个真题套卷上，按题目（Prompt-Split GroupKFold）进行 5 折交叉验证：
-
-| 评测方法 (Method) | MAE (平均绝对误差) | RMSE | Pearson $r$ | QWK (二次加权卡帕) | 评测结论 |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **原始大模型 (Raw LLM Zero-Shot)** | **6.66 分** (≈6.8) | 8.30 | 0.558 | **0.519** (≈0.52) | 显著的两极压缩与字数冗余偏好 |
-| **Ridge 回归校准** | **3.81 分** | 4.82 | 0.833 | **0.760** | 线性去偏极佳，外推稳健 |
-| **梯度提升树校准 (GBDT)** | **4.14 分** (≈4.1) | 5.22 | 0.801 | **0.724** (≈0.71) | 非线性建模，自适应边界饱和 |
-| **Ensemble 融合模型** | **3.86 分** | 4.88 | 0.828 | **0.752** | 兼顾极值与平滑性 |
-
-### 特征消融矩阵 (Ablation Matrix)
-
-```
-[消融对比]
-Config A: 仅使用原始总分 (Raw Score Only) ───────> MAE: 5.88 | QWK: 0.422
-Config B: 原始总分 + 五维细分量表 ─────────────> MAE: 4.22 | QWK: 0.720
-Config C: 全特征 (加入采分点覆盖率 + 题型 + 长度) ──> MAE: 3.81 | QWK: 0.759 (最佳)
-```
-
----
-
-## 🏗️ 系统架构图 (System Architecture)
-
-```mermaid
-flowchart TD
-    subgraph DataInput ["1. 输入与预处理"]
-        A["题干要求 (Prompt)"]
-        B["给定资料 (Source Materials)"]
-        C["考生作答 (Candidate Essay)"]
-    end
-
-    subgraph Verification ["2. 证据链校验与拒判"]
-        D{"关键材料是否完备?"}
-        E["触发暂不评分 (Withhold Scores)<br/>仅给文本修改建议，无幻觉分"]
-        F["Stage A: 题干共识采分点锚定 (Consensus Matching)"]
-    end
-
-    subgraph Evaluation ["3. 结构化大模型评阅"]
-        G["程序核算: 加权要点覆盖率 (Coverage)"]
-        H["Stage B: 五维结构化输出 (GRADE_PROMPT)"]
-        I["特征提取: 原始总分 / 五维子分 / 覆盖率 / 字数"]
-    end
-
-    subgraph Calibration ["4. 统计校准引擎"]
-        J["Ridge 回归校准器 (L2 Regularized)"]
-        K["梯度提升树 (GBDT Calibrator)"]
-        L["评分一致性指标: 方差 sigma^2 计算"]
-    end
-
-    subgraph Output ["5. 终端呈现"]
-        M["校准预测分 (MAE 4.1 / QWK 0.71)"]
-        N["五维雷达图 + 逐句红笔朱批 + 升格示范"]
-        O["评分置信度徽章 (高 / 中 / 人工复核)"]
-    end
-
-    DataInput --> D
-    D -- "否" --> E
-    D -- "是" --> F
-    F --> G --> H --> I
-    I --> J & K --> L
-    L --> M & N & O
-```
-
----
-
-## 📂 项目目录结构 (Repository Structure)
-
-```
-├── calibration/                    # 机器学习分数校准模块 (Python)
-│   ├── __init__.py
-│   ├── dataset.py                  # 2,420 篇样本基准数据集生成与加载
-│   ├── models.py                   # Ridge、GBDT 与 Ensemble 校准模型实现
-│   ├── metrics.py                  # QWK (二次加权卡帕)、MAE、RMSE、一致性方差
-│   ├── train.py                    # Prompt-Split 5 折交叉验证主训练脚本
-│   ├── ablation.py                 # 特征消融实验 (量化采分点覆盖率与子分贡献)
-│   ├── bias_analysis.py            # 分数段、题型与作答篇幅偏差分析
-│   ├── consistency.py              # 重复评阅一致性方差 (sigma^2) 检验
-│   ├── weekly_eval_routine.py      # 每周自动化回归评测与防漂移管线
-│   └── calibrator_weights.json     # 紧凑模型权重导出 (供前端与轻量服务端使用)
-├── site/                           # 现代化 Web 前端 (HTML / CSS / JS)
-│   ├── index.html                  # 网站主页 (支持免登录游客模式与账号体系)
-│   ├── css/site.css                # 极简高对比度纸墨朱批视觉规范
-│   ├── js/vendor/calibration.js    # 浏览器端纯 JS 统计校准毫秒级推理引擎
-│   ├── js/vendor/coverage.js       # 采分点加权覆盖率计算器
-│   └── js/app.js                   # 批改、真题、解题陪练与校准分数渲染
-├── skill/                          # 申论批改方法论与提示词工程
-│   ├── prompts.js                  # GRADE_PROMPT / ANCHOR_MATCH_PROMPT / 拒判规则
-│   └── references.js               # 七位名师方法论专题知识库 (7.2 万字)
-├── data/                           # 评测基准数据集与历年真题库
-│   ├── calibration_benchmark_2400.csv  # 2,420 份作答评测基准集
-│   └── papers.js                   # 历年国考/省考精选真题库
-├── docs/                           # 深度技术报告与文档
-│   ├── LLM_ESSAY_GRADING_CALIBRATION_BLOG.md  # 详细技术博客与实证报告
-│   ├── LLM_SCORING_BIAS_ANALYSIS.md           # 偏差深度分析报告
-│   └── WEEKLY_REGRESSION_TEST_LOG.json        # 每周回归测试日志
-├── tools/                          # 质量门槛、合规测试与打包脚本
-│   ├── validate.js                 # 全项目静态语法与完整性断言 (13项全通)
-│   ├── test-coverage.js            # 采分点覆盖率算法契约测试
-│   ├── test-compliance.js          # 隐私与数据合规自测
-│   └── bundle-single-html.js       # 单文件零依赖 HTML 打包工具
-├── 申论朱批.html                    # 单文件零依赖离线版 (双击即可在浏览器运行)
-├── site-server.js                  # 本地全功能开发服务器 (纯 Node 零依赖)
-├── 启动网站.cmd                     # Windows 一键启动脚本
-├── run_calibration_repro.py        # 一键复现所有基准评测与消融实验的主脚本
-├── requirements.txt                # Python 依赖清单
-└── README.md                       # 项目主文档
-```
-
----
-
-## 🚀 快速上手与一键复现 (Quick Start)
-
-### 1. 运行机器学习校准与复现基准评测 (Python)
-
-环境要求：Python 3.10+
-
-```bash
-# 1. 克隆代码仓库
-git clone https://github.com/yyhhb501-bot/llm-essay-grading-calibration.git
-cd llm-essay-grading-calibration
-
-# 2. 安装依赖
-pip install -r requirements.txt
-
-# 3. 一键复现所有评测指标 (GroupKFold、消融实验、偏差分析、一致性方差、回归测试)
-python run_calibration_repro.py
-```
-
-### 2. 启动完全可用的批改网站 (Web App)
-
-环境要求：Node.js 18+（项目服务端为纯 Node 零依赖）
-
-```bash
-# 启动本地服务 (默认监听 8788 端口)
+```powershell
+# 用自己的邀请码；值仅在本机填写，不要提交
+$env:REGISTER_INVITE_CODE = 'choose-your-local-invite'
 node site-server.js
 ```
 
-启动后在浏览器打开 `http://127.0.0.1:8788/`：
-- 点击 **「免登录快速体验（游客模式）」** 即可直接进入系统；
-- 支持内置真题速填、题型切换、自配模型 API Key 或使用预设模型进行批改；
-- 评阅结果页实时呈现 **原始打分**、**统计校准分**、**采分点覆盖率** 与 **高置信度一致性标签**！
+打开 `http://127.0.0.1:8787`，点击注册，填写刚设置的邀请码，登录后进入设置。可使用自己的模型 API，或由站主配置共享模型。没有有效模型服务凭据时，网站可以打开，但不能完成真实 AI 批改；连接测试会显示实际错误。
 
-### 3. 零依赖离线体验 (Single-File Offline)
+共享智谱服务可用环境变量 `ZHIPU_API_KEY`、`ZHIPU_MODEL` 和 `ZHIPU_VISION_MODEL`；OpenCode Go 使用 `OPENCODE_GO_API_KEY`。供应商实际返回和有效权限决定调用是否成功。不要上传 Key、账号库或 `.runtime/`。
 
-- 直接在 Windows / Mac 资源管理器中双击根目录下的 **`申论朱批.html`**；
-- 即可在浏览器中离线打开单文件完整应用，支持本地模型直连批改与离线数据管理。
+## 复现实验
 
-### 4. 导入微信小程序 (Mini-Program)
-
-- 打开**微信开发者工具** $\to$ 导入项目 $\to$ 选择本项目根目录；
-- AppID 选择“测试号”或填写自备 AppID；
-- 工具栏“详情” $\to$ “本地设置” $\to$ 勾选“不校验合法域名”即可在模拟器中即时调试。
-
----
-
-## 🧪 自动化测试套件 (Automated Test Suite)
-
-执行全量质量与算法契约断言：
-
-```bash
-# 静态质量校验 (13 项全部通过)
-node tools/validate.js
-
-# 覆盖率算法契约测试
-node tools/test-coverage.js
-
-# 隐私与数据传输合规自测
-node tools/test-compliance.js
-
-# 服务端接口与代理转发自测
-node tools/test-site.js
+```powershell
+python -m pip install -r requirements.txt
+# 显式模拟演示，只验证功能
+python run_calibration_repro.py --demo --output .runtime/demo-run-001
+# 真正人工标签需自行提供，不随仓库发布
+python run_calibration_repro.py --input path/to/human-labels.csv --data-kind human --output .runtime/human-run-001
+python -m unittest discover -s calibration/tests -v
 ```
 
----
+实验没有默认生成“人工标签”的路径。真实 CSV 的字段见 `calibration/example-schema.csv`。输出包含来源摘要、题目组切分、指标、偏差、消融和模型。没有重复评分时一致性为 null。训练脚本不自动审核标签、不自动重训、不自动发布。具体限制和接入方式见[实验说明](calibration/README.md)。
 
-## 📖 技术博客与深入分析 (Documentation)
+## 验证与构建
 
-- 📘 [深度技术博客：大语言模型申论智能阅卷与分数校准系统实践](docs/LLM_ESSAY_GRADING_CALIBRATION_BLOG.md)
-- 📊 [大模型申论阅卷系统性偏差分析报告](docs/LLM_SCORING_BIAS_ANALYSIS.md)
-- 📝 [每周自动化回归测试日志与质量门禁](docs/WEEKLY_REGRESSION_TEST_LOG.json)
+```powershell
+node tools/test-auth.mjs
+node tools/test-site.js
+node tools/test-site-api.js
+node tools/test-model-policy.mjs
+node tools/test-opencode-go.mjs
+node tools/build-site.js
+node tools/bundle-single-html.js
+```
 
----
+这些网站测试使用隔离数据库与假上游，不能证明真实供应商服务可用。Python 模拟自测也不能证明真实阅卷效果。验收记录见[当前交付记录](docs/简历项目对齐与发布记录-2026-10-27.md)。
 
-## 📄 开源许可证 (License)
+## 发布
 
-本项目基于 [MIT License](LICENSE) 开源。
+完整网站由 Cloudflare Worker 提供静态文件、账号与模型代理，使用 D1。GitHub Pages 只承载静态研究说明，不能替代这个后端。现有生产配置在 `worker/wrangler.toml`；复用本项目的开发者应改用自己的账号、域名和 D1。
+
+`node tools/prepare-site-release.js --out=.agent/site-release-YOUR-ID --allow-dirty` 创建独立发布包；复核 `manifest.json`、运行包内 `verify.cjs` 和关键流程测试后再部署。不得将本地缓存、凭据、真实人工标签、用户作答或账号库一起发布。
+
+## 目录
+
+| 路径 | 用途 |
+| --- | --- |
+| `site/` | 移动端网站与研究说明 |
+| `site-server.js`、`server/` | 本地服务、认证、题库和模型策略 |
+| `worker/` | Cloudflare Worker 与 D1 迁移 |
+| `calibration/` | 显式数据输入的训练评估与自测 |
+| `skill/`、`data/` | 方法论提示词、题库、明确标记的模拟数据 |
+| `tools/` | 构建、隔离验收与发布工具 |
+| `pages/`、`utils/` | 保留的微信小程序源码；当前优先验收网站 |
+
+## 真实成果边界
+
+已具备可运行代码与实验流程；独立人工标注、真实 MAE/QWK 改善、用户规模、线上自动周评估与重训、手机蜂窝网络和微信内置浏览器验收仍需另行证据。当前没有承诺特定评分准确度。使用代码时请保留题库及第三方内容来源说明；代码许可证不替代第三方内容授权。

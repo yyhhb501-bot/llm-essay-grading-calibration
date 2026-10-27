@@ -1,17 +1,17 @@
 'use strict';
-// Assemble a self-contained Cloudflare Worker release package from a clean baseline.
+// Freeze reviewed inputs and build a self-contained Worker release in isolation.
 //
-//   node tools/prepare-site-release.js
+//   node tools/prepare-site-release.js [--out=.agent/site-release-YYYYMMDD] [--allow-dirty]
 //
 // What it does (never deploys, never touches D1/secrets):
-//   1. Guard: site/ + data/ + skill/ must be git-clean so in-place regeneration is diffable.
-//   2. Re-run tools/build-site.js and tools/sync-site-papers.js in place.
+//   1. Guard all build/backend inputs; uncommitted inputs require --allow-dirty.
+//   2. Freeze selected inputs and regenerate only inside the release build-input/.
 //   3. Quality gate: a paper enters the release index only if it has questions AND
 //      non-empty materials AND a catalog entry with an allowed source URL. Rejected
 //      papers are listed with reasons and excluded (index/bundle are rebuilt in the
 //      release copy from the approved set only).
 //   4. Copy site/ into .agent/site-release-<date>/assets, generate wrangler.toml
-//      (absolute paths, same D1 binding/routes), manifest.json (bytes+SHA256 per file),
+//      (package-relative paths, same D1 binding/routes), manifest.json (assets+backend hashes),
 //      变更说明.md (diff vs the live 53-paper snapshot) and 回滚步骤.md.
 //   5. Sensitive-file assertions: no .runtime/, deploy-edgeone/, .env, zip, sqlite,
 //      token/password/secret names, and no file over the 25 MiB Cloudflare asset cap.
@@ -23,9 +23,12 @@ const zlib = require('zlib');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const SITE = path.join(ROOT, 'site');
-const RELEASE = path.join(ROOT, '.agent/site-release-20261024');
+const outArg = process.argv.find(arg => arg.startsWith('--out='));
+const RELEASE = path.resolve(ROOT, outArg ? outArg.slice(6) : '.agent/site-release-20261026-final');
+const BUILD = path.join(RELEASE, 'build-input');
+const SITE = path.join(BUILD, 'site');
 const ASSETS = path.join(RELEASE, 'assets');
+const SOURCE = path.join(RELEASE, 'source');
 const LIVE_SNAPSHOT = path.join(ROOT, '.agent/mp-papers-release/assets-1792469869271');
 // Keep in sync with tools/test-paper-catalog.js (allowed provenance for catalog entries).
 const SOURCE_RE = /^https:\/\/(gwy\.gkzhenti\.cn\/paper\/\d+|gd\.huatu\.com\/2020\/0729\/\d+\.html|m\.aipta\.com\/article\/\d+\.html)$/;
@@ -41,25 +44,40 @@ function walk(dir, base = dir, out = []) {
 }
 
 // 1) Clean-baseline guard over every directory the build reads or writes.
-const dirty = spawnSync('git', ['status', '--porcelain', '--', 'site', 'data', 'skill', 'tools', 'worker'], { cwd: ROOT, encoding: 'utf8' });
+const dirty = spawnSync('git', ['status', '--porcelain', '--', 'site', 'data', 'skill', 'tools', 'worker', 'server', 'site-server.js', 'assets'], { cwd: ROOT, encoding: 'utf8' });
 if (dirty.status !== 0) fail('git status failed: ' + dirty.stderr);
-if (dirty.stdout.trim()) fail('site/data/skill/tools/worker 有未提交改动，先提交或还原后再构建发布包：\n' + dirty.stdout.trim());
+if (dirty.stdout.trim() && !process.argv.includes('--allow-dirty')) fail('构建输入有未提交改动；提交后构建，或显式 --allow-dirty 固定当前审阅过的字节。不会还原工作区。');
 if (fs.existsSync(RELEASE)) fail('发布目录已存在：' + RELEASE + '（如需重建请先手动移除）');
+if (!RELEASE.startsWith(path.join(ROOT, '.agent') + path.sep)) fail('输出必须位于项目 .agent/ 下的独立目录');
 
-// 2) Regenerate vendor outputs in place (git diff afterwards shows exactly what changed).
+// Freeze only explicit build inputs. Never read .runtime, git configuration,
+// old deployment packages or credentials into a release. Build in isolation.
+const inputs = ['site', 'skill', 'data/papers.js', 'data/paper-catalog.json',
+  'data/papers-full', 'data/answer-points', 'data/consensus-points',
+  'tools/build-site.js', 'tools/sync-site-papers.js', 'tools/coverage-score.js',
+  'assets/logo-144.png', 'assets/logo-512.png', 'assets/share-cover.png'];
+fs.mkdirSync(BUILD, { recursive: true });
+for (const rel of inputs) {
+  const from = path.join(ROOT, rel);
+  if (!fs.existsSync(from)) continue;
+  fs.mkdirSync(path.dirname(path.join(BUILD, rel)), { recursive: true });
+  fs.cpSync(from, path.join(BUILD, rel), { recursive: true, dereference: false });
+}
+
+// 2) Regenerate only inside the frozen build input directory.
 for (const script of ['tools/build-site.js', 'tools/sync-site-papers.js']) {
-  const run = spawnSync(process.execPath, [script], { cwd: ROOT, encoding: 'utf8' });
+  const run = spawnSync(process.execPath, [script], { cwd: BUILD, encoding: 'utf8' });
   if (run.status !== 0) fail(script + ' 失败：\n' + run.stdout + run.stderr);
   console.log('ran ' + script + ' → ' + run.stdout.trim());
 }
 
 // 3) Quality gate over papers-full, independent of what sync chose to emit.
-const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/paper-catalog.json'), 'utf8'));
+const catalog = JSON.parse(fs.readFileSync(path.join(BUILD, 'data/paper-catalog.json'), 'utf8'));
 const metaById = new Map(catalog.papers.map(p => [p.id, p]));
 const approved = new Set();
 const excluded = [];
-for (const f of fs.readdirSync(path.join(ROOT, 'data/papers-full')).filter(f => f.endsWith('.json') && f !== 'index.json')) {
-  const doc = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/papers-full', f), 'utf8'));
+for (const f of fs.readdirSync(path.join(BUILD, 'data/papers-full')).filter(f => f.endsWith('.json') && f !== 'index.json')) {
+  const doc = JSON.parse(fs.readFileSync(path.join(BUILD, 'data/papers-full', f), 'utf8'));
   const reasons = [];
   if (!doc.questions || !doc.questions.length) reasons.push('无题目');
   const materialsTotal = (doc.materials || []).reduce((s, m) => s + (m.content || m.text || '').length, 0);
@@ -106,7 +124,7 @@ for (const dirName of ['answer-points', 'consensus-points']) {
   const outDir = path.join(ASSETS, 'js/vendor', dirName);
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
-  const srcDir = path.join(ROOT, 'data', dirName);
+  const srcDir = path.join(BUILD, 'data', dirName);
   if (!fs.existsSync(srcDir)) continue;
   for (const f of fs.readdirSync(srcDir)) {
     if (!f.endsWith('.json') || f === 'index.json') continue;
@@ -134,17 +152,24 @@ for (const rel of walk(ASSETS)) {
   if (fs.statSync(path.join(ASSETS, rel)).size > 25 * 1024 * 1024) fail('文件超过 Cloudflare 25MiB 上限: ' + rel);
 }
 
-// 6) wrangler.toml — same worker/D1/routes, assets pinned to this release snapshot.
+// 6) Freeze the backend and its local adapter for acceptance. Relative paths
+// make the release portable; workspace changes cannot alter its deployment.
+for (const rel of ['worker/worker.js', 'site-server.js', ...walk(path.join(ROOT, 'server')).filter(f => /\.(?:mjs|cjs|js)$/.test(f)).map(f => 'server/' + f),
+  ...walk(path.join(ROOT, 'worker/migrations')).filter(f => f.endsWith('.sql')).map(f => 'worker/migrations/' + f)]) {
+  fs.mkdirSync(path.dirname(path.join(SOURCE, rel)), { recursive: true });
+  fs.copyFileSync(path.join(ROOT, rel), path.join(SOURCE, rel));
+}
 const wrangler = fs.readFileSync(path.join(ROOT, 'worker/wrangler.toml'), 'utf8')
-  .replace(/main = ".*"/, 'main = ' + JSON.stringify(path.join(ROOT, 'worker/worker.js').replace(/\\/g, '/')))
-  .replace(/directory = "\.\.\/site"/, 'directory = ' + JSON.stringify(ASSETS.replace(/\\/g, '/')))
-  .replace(/migrations_dir = "migrations"/, 'migrations_dir = ' + JSON.stringify(path.join(ROOT, 'worker/migrations').replace(/\\/g, '/')));
-if (!wrangler.includes('main = ' + JSON.stringify(path.join(ROOT, 'worker/worker.js').replace(/\\/g, '/'))) ||
-    !wrangler.includes('directory = ' + JSON.stringify(ASSETS.replace(/\\/g, '/'))) ||
-    !wrangler.includes('migrations_dir = ' + JSON.stringify(path.join(ROOT, 'worker/migrations').replace(/\\/g, '/')))) {
-  fail('wrangler.toml 替换失败：main/directory/migrations_dir 必须全部替换为绝对路径');
+  .replace(/^main = ".*"/m, 'main = "./source/worker/worker.js"')
+  .replace(/^directory = "\.\.\/site"/m, 'directory = "./assets"')
+  .replace(/^migrations_dir = "migrations"/m, 'migrations_dir = "./source/worker/migrations"');
+if (!wrangler.includes('main = "./source/worker/worker.js"') ||
+    !wrangler.includes('directory = "./assets"') ||
+    !wrangler.includes('migrations_dir = "./source/worker/migrations"')) {
+  fail('wrangler.toml 替换失败：发布配置必须只引用包内资源');
 }
 fs.writeFileSync(path.join(RELEASE, 'wrangler.toml'), wrangler);
+fs.copyFileSync(path.join(ROOT, 'tools/verify-site-release.js'), path.join(RELEASE, 'verify.cjs'));
 
 // 7) manifest.json — every asset with bytes+SHA256 (same shape as .agent/admin-release).
 const saved = walk(ASSETS).sort().map(rel => {
@@ -155,7 +180,15 @@ const manifest = {
   origin: 'https://shenlundawang.asia',
   createdAt: new Date().toISOString(),
   generatedBy: 'tools/prepare-site-release.js',
-  assets: ASSETS,
+  revision: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim(),
+  reviewedUncommittedInputs: dirty.stdout.trim().split(/\r?\n/).filter(Boolean),
+  configSha256: sha256(Buffer.from(wrangler)),
+  verifierSha256: sha256(fs.readFileSync(path.join(RELEASE, 'verify.cjs'))),
+  sourceSaved: walk(SOURCE).sort().map(file => {
+    const buf = fs.readFileSync(path.join(SOURCE, file));
+    return { file, bytes: buf.length, sha256: sha256(buf) };
+  }),
+  assets: './assets',
   papers: {
     indexed: indexIds.size,
     excluded: excluded.sort((a, b) => a.id < b.id ? -1 : 1),
@@ -192,7 +225,7 @@ if (fs.existsSync(LIVE_SNAPSHOT)) {
 }
 fs.writeFileSync(path.join(RELEASE, '变更说明.md'), [
   '# 发布包变更说明（' + manifest.createdAt + '）', '',
-  '来源：干净基线重建（tools/build-site.js + tools/sync-site-papers.js）+ 质量门（题目非空、材料非空、目录来源合法）。',
+  '来源：固定当前输入快照后隔离构建；提交版本和未提交输入见 manifest。构建不修改工作区。后端及依赖固定在 source/，静态字节在 assets/。',
   '', changesSection,
   '## 质量门排除清单（不进发布包）', '',
   excluded.length ? excluded.map(e => '- `' + e.id + '` ' + e.title + ' — ' + e.reason).join('\n') : '（无）',
@@ -202,6 +235,7 @@ fs.writeFileSync(path.join(RELEASE, '变更说明.md'), [
   '- 敏感文件扫描通过（无 .runtime/deploy-edgeone/.env/zip/sqlite/token 类文件；单文件均 <25MiB）',
   '', '## 部署方式（需用户明确授权后执行，本工具不部署）', '',
   '```bash',
+  'node "' + (RELEASE + '/verify.cjs').replace(/\\/g, '/') + '" "' + RELEASE.replace(/\\/g, '/') + '"',
   'npx wrangler deploy --config "' + (RELEASE + '/wrangler.toml').replace(/\\/g, '/') + '"',
   '```', ''
 ].join('\n'));
@@ -209,17 +243,20 @@ fs.writeFileSync(path.join(RELEASE, '变更说明.md'), [
 // 9) 回滚步骤.md
 fs.writeFileSync(path.join(RELEASE, '回滚步骤.md'), [
   '# 回滚步骤（如新版本上线后出问题）', '',
-  '1. 回滚 = 重新部署 2026-10-21 时点的线上静态快照（53 套版，即当前线上内容的逐字节副本）：',
+  '1. 部署前用 wrangler deployments list --name shenlun-zhupi 记录当前实际生产版本 ID。旧记录版本为 6689a339-b3ae-4d5d-924e-f482f3ca86ce，必须先核实仍是本次部署前版本。',
+  '2. 回滚使用上一步记录的完整 Cloudflare 版本 ID（勿复制占位符执行）：',
   '   ```bash',
-  '   npx wrangler deploy --config "E:/Vscode/申论批改app/.agent/admin-release/wrangler.toml"',
+  '   npx wrangler rollback <已核实的部署前版本ID> --config "' + (RELEASE + '/wrangler.toml').replace(/\\/g, '/') + '"',
   '   ```',
-  '2. 回滚只替换 Worker 与静态资源；**账号库 D1 `shenlun-accounts` 不受影响、不要删除或重建**。',
-  '3. 本次发布无新增 D1 迁移（0003 已于 10-21 应用到线上），回滚无需回滚数据库。',
-  '4. 回滚后用 `curl -s https://shenlundawang.asia/js/vendor/papers-index.js | sha256sum` 复核，',
-  '   应等于 `b5fbf4d03bfaba31ae6d8b03ad324562894cecaf7a8ead4145d4a790394d99b`（53 套版哈希）。',
-  '5. Worker 版本级回退也可用 Cloudflare 控制台（Workers → shenlun-zhupi → Deployments → Rollback 到 6689a339）。',
+  '3. 回滚恢复旧 Worker 版本及对应静态资源；不要重部署引用当前工作区源码的旧 admin-release 配置。**账号库 D1 不删除、不重建、不回滚**。',
+  '4. 本次没有新增迁移或更改 secrets。Cloudflare rollback 本轮未实操，真实回滚以部署日记录和线上核验为准。',
+  '5. 旧 53 套参考索引 SHA256：' + (fs.existsSync(path.join(LIVE_SNAPSHOT, 'js/vendor/papers-index.js')) ? sha256(fs.readFileSync(path.join(LIVE_SNAPSHOT, 'js/vendor/papers-index.js'))) : '快照缺失，请以部署前下载为准') + '（自动计算，不手写哈希）。',
   ''
 ].join('\n'));
+
+const verified = spawnSync(process.execPath, [path.join(RELEASE, 'verify.cjs'), RELEASE], { encoding: 'utf8' });
+if (verified.status !== 0) fail('发布包完整性验证失败：' + verified.stdout + verified.stderr);
+console.log(verified.stdout.trim());
 
 console.log(JSON.stringify({
   releaseDir: RELEASE, papersIndexed: indexIds.size, papersExcluded: excluded.length,

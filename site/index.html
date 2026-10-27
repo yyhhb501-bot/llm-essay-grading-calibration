@@ -173,11 +173,12 @@
         <div>
           <span style="color:#64748b;">统计校准预测分：</span>
           <strong id="result-calibrated-score" style="color:#0f172a;font-size:14px;">—</strong>
-          <span style="color:#94a3b8;font-size:11px;">（Ridge/GBDT 消除偏差）</span>
+          <span style="color:#94a3b8;font-size:11px;">（人工标注模型的辅助估计）</span>
         </div>
-        <div id="result-consistency-badge" style="background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:12px;font-weight:500;font-size:11px;">评分一致性：高置信度</div>
+        <div id="result-consistency-badge" style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:12px;font-weight:500;font-size:11px;">一致性待验证</div>
       </div>
       <div id="result-dims"></div>
+      <p class="field-hint">统计校准待真实人工评分验证；当前分数为 AI 辅助参考。<a href="research.html" target="_blank" rel="noopener">查看评估方法与数据状态</a></p>
     </div>
 
     <div class="card">
@@ -412,6 +413,7 @@
 <script src="js/vendor/paper-catalog.js"></script>
 <script src="js/vendor/coverage.js"></script>
 <script src="js/vendor/calibration.js"></script>
+<script src="js/calibration-model.js"></script>
 <script src="js/vendor/papers-index.js"></script>
 <dialog class="password-dialog" id="password-dialog" aria-labelledby="password-title">
   <form id="password-form">

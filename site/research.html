@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>申论朱批 · 评分校准与数据说明</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#faf8f5;color:#292923;font:16px/1.85 system-ui,-apple-system,"Microsoft YaHei",sans-serif}main{max-width:850px;margin:auto;padding:50px 24px 80px}a{color:#973e30;text-underline-offset:4px}nav{display:flex;gap:24px;font-size:14px;margin-bottom:54px}h1{font-size:clamp(30px,5vw,46px);line-height:1.3;margin:16px 0 24px;font-weight:650}h2{font-size:22px;margin:36px 0 12px}p{margin:10px 0 18px}.eyebrow{font-size:13px;letter-spacing:3px;color:#805b4e}.lead{font-size:19px;color:#626058}.notice{background:#fff;border:1px solid #e7ded3;border-left:4px solid #ad4936;padding:20px 24px;margin:28px 0}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.step{background:#fff;border:1px solid #e7ded3;padding:18px;border-radius:10px}.step b{display:block;color:#973e30}.status{color:#825e36;font-weight:600}code{font-size:13px;background:#eee9e2;padding:2px 5px;overflow-wrap:anywhere}footer{border-top:1px solid #e0d8cd;margin-top:40px;padding-top:20px;color:#756f65;font-size:13px}@media(max-width:650px){main{padding-top:24px}nav{margin-bottom:32px}.steps{grid-template-columns:1fr}.notice{padding:16px}}
+  </style>
+</head>
+<body><main>
+  <nav><a href="https://shenlundawang.asia/#/grade">进入批改网站</a><a href="https://github.com/yyhhb501-bot/llm-essay-grading-calibration">查看源代码</a></nav>
+  <div class="eyebrow">申论朱批 / RESEARCH NOTES</div>
+  <h1>评分有依据，<br>效果需要验证。</h1>
+  <p class="lead">题目、给定材料与考生作答共同构成批改依据。AI 提供练习反馈；统计校准的效果需要独立人工评分来检验。</p>
+  <div class="notice"><strong>当前数据状态：待真实数据验证</strong><p>仓库内 2,420 行评分数据由随机程序生成，不是真实考生作答，也不代表用户人数。尚无真实人工评分样本，不能确认 MAE 6.8→4.1、QWK 0.52→0.71，或 300 多用户、2,400 多篇实际提交。</p><span class="status">网站未启用模拟权重；不显示固定“高置信度”。</span></div>
+  <h2>已经实现的流程</h2>
+  <div class="steps"><div class="step"><b>01 · 依据核验</b>结合题干、材料和作答评阅，缺少关键依据时暂不评分。</div><div class="step"><b>02 · 分题目评估</b>Ridge 与梯度提升树比较，训练与测试题目隔离，报告 MAE、QWK 和消融。</div><div class="step"><b>03 · 观察可靠性</b>按分数段、题型和作答字数分析偏差。重复评分不足时，一致性留空。</div></div>
+  <h2>如何复现实验</h2><p>下载代码后安装 Python 依赖，使用 <code>python run_calibration_repro.py --demo</code> 验证模拟流程。真实研究需另行提供人工标注 CSV，详情见仓库中的 <a href="https://github.com/yyhhb501-bot/llm-essay-grading-calibration/blob/main/calibration/README.md">实验说明</a>。</p>
+  <h2>网站怎么使用</h2><p>从上方进入正式网站，注册或登录后填写题目、材料与作答，或从真题库选择题目。共享模型是否可用以连接测试结果为准；也可在设置中填写自己的模型服务。历史记录保存在当前浏览器，不会跨设备自动同步。</p>
+  <h2>尚需完成的验证</h2><p>独立人工标注与标注者一致性、跨题目泛化的真实效果、真实重复评阅波动、真实使用规模及异地手机验收。模拟测试和程序运行成功都不能替代这些证据。</p>
+  <footer>AI 结果仅作备考参考，不是官方分数。数据与模型来源说明以当前仓库记录为准。</footer>
+</main></body></html>

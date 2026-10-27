@@ -37,7 +37,12 @@ var HOST = String(process.env.HOST || '0.0.0.0');
 var ACCESS_CODE = String(process.env.ACCESS_CODE || '').trim();
 var ZHIPU_API_KEY = String(process.env.ZHIPU_API_KEY || '').trim();
 var DEFAULT_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
-var DEFAULT_MODEL = 'glm-4-flash';
+var modelPolicy = require('./server/model-policy.cjs');
+var openCodeGo = require('./server/opencode-go.cjs');
+var goConfig = {};
+try { goConfig = JSON.parse(fs.readFileSync(process.env.OPENCODE_GO_CONFIG_FILE || path.join(ROOT, '.runtime', 'opencode-go.json'), 'utf8')); } catch (_) {}
+var GO_KEY = String(process.env.OPENCODE_GO_API_KEY || goConfig.apiKey || '').trim();
+var DEFAULT_MODEL = modelPolicy.DEFAULT_MODEL;
 var SHARED_FILE = process.env.SLZ_SHARED_CONFIG_FILE || path.join(ROOT, '.runtime', 'shared-model.json');
 var sharedConfig = null;
 var paperDatabase = null;
@@ -318,15 +323,19 @@ async function handleChat(req, res) {
   }
 
   var ownKey = String(body.apiKey || '').trim();
-  var apiKey = ownKey;
+  var useGo = openCodeGo.selected(body, GO_KEY);
+  var apiKey = useGo ? GO_KEY : ownKey;
   var baseURL;
-  if (apiKey) {
+  if (useGo) {
+    baseURL = openCodeGo.BASE_URL;
+  } else if (apiKey) {
     baseURL = String(body.baseURL || '').trim() || DEFAULT_BASE_URL;
   } else {
     apiKey = sharedConfig ? sharedConfig.apiKey : ZHIPU_API_KEY;
     baseURL = sharedConfig ? sharedConfig.baseURL : String(process.env.ZHIPU_BASE_URL || DEFAULT_BASE_URL).trim();
   }
   if (!apiKey) {
+    if (body.vision && GO_KEY) { sendJson(res, 400, { error: 'OpenCode Go DeepSeek 已用于文本批改；拍照识别尚未配置视觉服务，请先粘贴文字作答。' }); return; }
     sendJson(res, 500, { error: '服务端还没有配置模型密钥：请设置环境变量 ZHIPU_API_KEY，或改用自带 Key 模式。' });
     return;
   }
@@ -336,8 +345,10 @@ async function handleChat(req, res) {
     return;
   }
 
-  var defaultModel = body.vision ? 'glm-4v-flash' : DEFAULT_MODEL;
-  var model = !ownKey && sharedConfig ? sharedConfig.model : String(body.model || '').trim() || defaultModel;
+  var model = useGo ? openCodeGo.MODEL : modelPolicy.selectModel(body, {
+    sharedModel: sharedConfig && sharedConfig.model || process.env.ZHIPU_MODEL,
+    visionModel: sharedConfig && sharedConfig.visionModel || process.env.ZHIPU_VISION_MODEL
+  });
   var useStream = body.stream !== false;
   // 客户端显式传的参数优先（共识锚点判定要 thinking:disabled + 低温度），未传时维持原有默认
   var upstreamBody = {
@@ -352,12 +363,13 @@ async function handleChat(req, res) {
   }
   if (body.ping) upstreamBody.max_tokens = 8;
   else if (Number(body.max_tokens) > 0) upstreamBody.max_tokens = Number(body.max_tokens);
+  modelPolicy.applyReasoning(upstreamBody, body);
 
   var upstream;
   try {
     upstream = await fetch(baseURL + '/chat/completions', {
       method: 'POST',
-      headers: {
+      headers: useGo ? await openCodeGo.headers(GO_KEY, authorization.user.id, body.messages) : {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + apiKey
       },
@@ -445,8 +457,10 @@ var server = http.createServer(function (req, res) {
 
   if (pathname === '/api/health') {
     authReady.then(function (auth) {
-      sendJson(res, 200, { ok: true, officialModel: sharedConfig ? sharedConfig.model : DEFAULT_MODEL,
-        sharedReady: !!(sharedConfig || ZHIPU_API_KEY), authRequired: true, authReady: !!auth,
+      sendJson(res, 200, { ok: true, officialModel: GO_KEY ? openCodeGo.MODEL : modelPolicy.selectModel({}, { sharedModel: sharedConfig && sharedConfig.model || process.env.ZHIPU_MODEL }),
+        officialVisionModel: sharedConfig || ZHIPU_API_KEY ? modelPolicy.selectModel({ vision: true }, { sharedModel: sharedConfig && sharedConfig.model || process.env.ZHIPU_MODEL, visionModel: sharedConfig && sharedConfig.visionModel || process.env.ZHIPU_VISION_MODEL }) : '',
+        sharedProvider: GO_KEY ? 'opencode-go-api' : 'zhipu',
+        sharedReady: !!(GO_KEY || sharedConfig || ZHIPU_API_KEY), authRequired: true, authReady: !!auth,
         registrationReady: !!auth && auth.registrationReady() });
     });
     return;

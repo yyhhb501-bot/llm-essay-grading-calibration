@@ -267,6 +267,7 @@ async function main() {
       messages: [{ role: 'user', content: '你好' }],
       stream: false,
       apiKey: 'own-key',
+      model: 'glm-4-flash', // Explicit non-thinking fixture; shared default is GLM-5.3.
       baseURL: 'http://127.0.0.1:' + upstreamPort + '/v1'
     })
   });
@@ -311,10 +312,11 @@ async function main() {
     passthroughJson = JSON.parse(passthrough.body);
   } catch (e) { /* 保持 null */ }
   check(
-    '显式 temperature/thinking/max_tokens 原样透传到上游',
+    'GLM 不支持关闭思考：兼容为 enabled/low，保留温度和输出上限',
     passthrough.status === 200 && passthroughJson && passthroughJson._echo &&
       passthroughJson._echo.temperature === 0.1 &&
-      passthroughJson._echo.thinking && passthroughJson._echo.thinking.type === 'disabled' &&
+      passthroughJson._echo.thinking && passthroughJson._echo.thinking.type === 'enabled' &&
+      passthroughJson._echo.reasoning_effort === 'low' &&
       passthroughJson._echo.max_tokens === 16,
     'status=' + passthrough.status + ' echo=' + JSON.stringify(passthroughJson && passthroughJson._echo),
     'echo=' + JSON.stringify(passthroughJson && passthroughJson._echo)

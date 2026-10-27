@@ -1,7 +1,7 @@
 'use strict';
 // 本地关键流程验收（假模型上游，零额度消耗）。运行：node tools/test-key-flows.js
 //
-// 静态目录通过 SLZ_SITE_DIR 指向发布包 .agent/site-release-20261024/assets，
+// 设置 SLZ_RELEASE_DIR 可选择其他发布包；默认验收 20261026-final 包内代码及资源。
 // 因此这里验收的是“将要发布的字节”（与 manifest.json 的 SHA256 逐项核对）。
 // 覆盖：健康检查、注册、普通用户权限、题库静态配套（索引/逐卷/共识/采分点/bundle）、
 // /api/chat 非流式与 SSE 透传、慢速流渐进、客户端取消（上游连接被销毁）、
@@ -20,8 +20,11 @@ const { once } = require('events');
 const { spawn } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const RELEASE_ASSETS = path.join(ROOT, '.agent/site-release-20261024/assets');
-const MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, '.agent/site-release-20261024/manifest.json'), 'utf8'));
+const RELEASE = path.resolve(process.env.SLZ_RELEASE_DIR || path.join(ROOT, '.agent/site-release-20261026-final'));
+const RELEASE_ASSETS = path.join(RELEASE, 'assets');
+const MANIFEST = JSON.parse(fs.readFileSync(path.join(RELEASE, 'manifest.json'), 'utf8'));
+assert.ok(MANIFEST.sourceSaved, '发布包必须包含固定后端，请重新构建旧版发布包');
+const SERVER_ENTRY = path.join(RELEASE, 'source/site-server.js');
 const SHARED_KEY = 'fake-shared-key-not-real';
 
 let passed = 0;
@@ -83,7 +86,7 @@ async function main() {
     apiKey: SHARED_KEY, baseURL: 'http://127.0.0.1:' + upstreamPort,
     model: 'glm-5.3-flash', accessCode: 'flow-access-code'
   }));
-  const child = spawn(process.execPath, ['site-server.js'], {
+  const child = spawn(process.execPath, [SERVER_ENTRY], {
     cwd: ROOT,
     env: {
       ...process.env, PORT: String(port), HOST: '127.0.0.1',
@@ -121,7 +124,7 @@ async function main() {
     ok('健康检查就绪（auth/shared/registration）', health && health.authReady && health.sharedReady && health.registrationReady);
 
     // ---- 账号与权限 ----
-    ok('错误邀请码注册被拒（403）', (await call('/api/auth/register', { username: 'badinvite', password: 'flow password 8', inviteCode: 'wrong-code' })).status, 403);
+    ok('错误邀请码注册被拒（403）', (await call('/api/auth/register', { username: 'badinvite', password: 'flow password 8', inviteCode: 'wrong-code' })).status === 403);
     const registered = await call('/api/auth/register', { username: 'flowuser', password: 'flow password 8', inviteCode: 'flow-invite' });
     ok('邀请码注册成功', registered.status === 201);
     const cookie = cookieOf(registered);
@@ -166,7 +169,7 @@ async function main() {
     ok('非流式假上游返回内容', ping.status === 200 && /MOCK 非流式回复/.test(pingJson.choices[0].message.content));
     ok('使用共享配置密钥（Bearer 共享 Key 而非环境变量）', lastUpstream().auth === 'Bearer ' + SHARED_KEY);
     ok('共享模式模型为 glm-5.3-flash', lastUpstream().body.model === 'glm-5.3-flash');
-    ok('ping 压缩为 max_tokens 8', lastUpstream().body.max_tokens === 8);
+    ok('GLM 思考模型连接测试预留 1024 tokens + low effort', lastUpstream().body.max_tokens === 1024 && lastUpstream().body.reasoning_effort === 'low');
     ok('glm-5.3-flash 默认 thinking enabled + temperature 1', lastUpstream().body.thinking && lastUpstream().body.thinking.type === 'enabled' && lastUpstream().body.temperature === 1);
 
     // ---- SSE 流式透传 ----
@@ -240,6 +243,13 @@ async function main() {
       && visionContent[0].type === 'image_url' && visionContent[0].image_url.url === 'data:image/jpeg;base64,/9j/4AAQ'
       && visionContent[1].type === 'text' && visionContent[1].text === '只转录图片中的手写作答，不要批改。'
       && vision.body.model === 'glm-5.3-flash');
+
+    await call('/api/chat', { model: 'client-must-not-select-shared-model', stream: false,
+      messages: [{ role: 'user', content: 'test' }] }, { cookie });
+    ok('Node 共享凭据固定站主模型', lastUpstream().body.model === 'glm-5.3-flash');
+    await call('/api/chat', { apiKey: 'fake-own-key', baseURL: 'http://127.0.0.1:' + upstreamPort,
+      model: 'own-vision-model', vision: true, stream: false, messages: [{ role: 'user', content: 'test' }] }, { cookie });
+    ok('Node 自带 Key 保留自定义模型', lastUpstream().body.model === 'own-vision-model' && lastUpstream().auth === 'Bearer fake-own-key');
 
     // ---- 登出 ----
     await call('/api/auth/logout', {}, { cookie });

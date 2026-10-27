@@ -13,3 +13,11 @@ __pycache__/
 node_modules/
 .DS_Store
 Thumbs.db
+deploy-edgeone/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.venv/
